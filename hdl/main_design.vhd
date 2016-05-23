@@ -48,6 +48,9 @@ entity main_design is
 end main_design;
 
 architecture Behavioral of main_design is
+    constant our_mac : std_logic_vector(47 downto 0) := x"01_23_45_67_89_AB";
+    constant our_ip  : std_logic_vector(31 downto 0) := x"0B_00_00_0A";
+
     component detect_speed_and_reassemble_bytes is
     Port ( clk125Mhz      : in  STD_LOGIC;
         -- Interface to input FIFO
@@ -91,6 +94,37 @@ architecture Behavioral of main_design is
     signal packet_data_valid  : STD_LOGIC;
     signal packet_data        : STD_LOGIC_VECTOR (7 downto 0);
 
+    -------------------------------------------
+    -- Protocol handlers
+    -------------------------------------------
+    component arp_handler is 
+    generic (
+        our_mac     : std_logic_vector(47 downto 0) := (others => '0');
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
+    port (  clk              : in  STD_LOGIC;
+            packet_in_valid  : in  STD_LOGIC;
+            packet_in_data   : in  STD_LOGIC_VECTOR (7 downto 0);
+            -- For receiving data from the PHY        
+            packet_out_req   : out std_logic := '0';
+            packet_out_grant : in  std_logic := '0';
+            packet_out_valid : out std_logic;         
+            packet_out_data  : out std_logic_vector(7 downto 0);         
+             -- to enable IP->MAC lookup for outbound packets
+            lookup_request   : in  std_logic;
+            lookup_ip        : in  std_logic_vector(31 downto 0);
+            lookup_mac       : out std_logic_vector(47 downto 0);
+            lookup_found     : out std_logic;
+            lookup_reply     : out std_logic);
+    end component;
+
+    signal packet_arp_req       : std_logic;
+    signal packet_arp_grant     : std_logic;
+    signal packet_arp_valid     : std_logic;         
+    signal packet_arp_data      : std_logic_vector(7 downto 0);         
+
+    -------------------------------------------
+    -- Debugging
+    -------------------------------------------    
     COMPONENT ila_0
     PORT (
         clk    : IN STD_LOGIC;
@@ -100,7 +134,7 @@ architecture Behavioral of main_design is
         probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
     );
     END COMPONENT ;
-    
+ 
 begin
    status  <= link_full_duplex & link_1000mb & link_100mb & link_10mb;
 
@@ -154,4 +188,22 @@ i_ila_0: ila_0 port map (
     probe2    => packet_data,
     probe3(0) => packet_data_valid);
 
+i_arp_handler:arp_handler  generic map (
+        our_mac => our_mac,
+        our_ip  => our_ip)
+    port map (
+        clk              => clk125MHz,
+        packet_in_valid  => packet_data_valid,
+        packet_in_data   => packet_data,
+        -- For Sending data to the PHY        
+        packet_out_req   => packet_arp_req,
+        packet_out_grant => packet_arp_grant,
+        packet_out_valid => packet_arp_valid,          
+        packet_out_data  => packet_arp_data,         
+         -- to enable IP->MAC lookup for outbound packets
+        lookup_request   => '0',
+        lookup_ip        => (others => '0'),
+        lookup_mac       => open,
+        lookup_found     => open,
+        lookup_reply     => open);
 end Behavioral;

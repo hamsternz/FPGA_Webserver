@@ -44,14 +44,14 @@ architecture Behavioral of tb_defragment_and_check_crc is
     end component;
     signal count : unsigned (7 downto 0) := "00000000";
     
-    signal clk : std_logic := '0'; 
+    signal clk                     : std_logic := '0'; 
     signal spaced_out_data_enable  : std_logic := '0';  
-    signal spaced_out_data : std_logic_vector(7 downto 0);
+    signal spaced_out_data         : std_logic_vector(7 downto 0);
     signal spaced_out_data_present : std_logic := '0';
-    signal spaced_out_data_error : std_logic := '0';
+    signal spaced_out_data_error   : std_logic := '0';
     
-    signal packet_data_valid : std_logic := '0';
-    signal packet_data : std_logic_vector(7 downto 0) := (others => '0');
+    signal packet_data_valid       : std_logic := '0';
+    signal packet_data             : std_logic_vector(7 downto 0) := (others => '0');
 
 begin
 
@@ -64,17 +64,23 @@ process
 process(clk)
     begin
         if rising_edge(clk) then
-            if count(1 downto 0) = "000" then
-                spaced_out_data <= "0000" & std_logic_vector(count(5 downto 2));
+--            if count(1 downto 0) = "000" then
+                spaced_out_data <= "000" & std_logic_vector(count(4 downto 0));
                 spaced_out_data_enable  <= '1';
-                if count(5 downto 2) /= "0000" then
+                if count(4 downto 0) = "00000" then
+                    spaced_out_data_enable  <= '0';
+                    spaced_out_data_present <= '0';
+                elsif count(4 downto 0) = "11111" then
+                    spaced_out_data_enable  <= '1';
+                    spaced_out_data_present <= '0';
+                else
+                    spaced_out_data_enable  <= '1';
                     spaced_out_data_present <= '1';
                 end if;
-            else
-                spaced_out_data <= "00000000";
-                spaced_out_data_present <= '0';
-                spaced_out_data_enable  <= '0';
-            end if;
+--            else
+--                spaced_out_data <= "00000000";
+--                spaced_out_data_present <= '0';
+--            end if;
             count <= count + 1;
         end if;
     end process;
