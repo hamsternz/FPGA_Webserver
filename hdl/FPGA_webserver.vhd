@@ -46,8 +46,8 @@ entity FPGA_webserver is
 end FPGA_webserver;
 
 architecture Behavioral of FPGA_webserver is
-    constant our_mac     : std_logic_vector(47 downto 0) := x"01_23_45_67_89_AB";
-    constant our_ip      : std_logic_vector(31 downto 0) := x"02_0A_0A_0A";
+    constant our_mac     : std_logic_vector(47 downto 0) := x"01_23_45_67_89_AB"; -- NOTE this is AB:89:67:45:23:01
+    constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";
     signal phy_ready     : std_logic := '0';
     -----------------------------
     -- For the clocking 
@@ -109,7 +109,11 @@ architecture Behavioral of FPGA_webserver is
     signal input_data_error   : STD_LOGIC;
 
     component main_design is
+    generic (
+        our_mac     : std_logic_vector(47 downto 0) := (others => '0');
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( clk125Mhz          : in  STD_LOGIC;
+           clk125Mhz90        : in  STD_LOGIC;
            input_empty        : in  STD_LOGIC;           
            input_read         : out STD_LOGIC;           
            input_data         : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -159,8 +163,12 @@ i_fifo_rxclk_to_clk125MHz: fifo_rxclk_to_clk125MHz port map (
     data_present    => input_data_present,
     data_error      => input_data_error);
 
-i_main_design: main_design port map (
+i_main_design: main_design generic map (
+        our_mac => our_mac,
+        our_ip  => our_ip
+     ) port map (
      clk125Mhz          => clk125Mhz,
+     clk125Mhz90        => clk125Mhz90,
 
      input_empty        => input_empty,           
      input_read         => input_read,           

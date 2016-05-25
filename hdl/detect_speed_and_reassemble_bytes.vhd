@@ -34,14 +34,14 @@ entity detect_speed_and_reassemble_bytes is
         link_1000mb         : out STD_LOGIC;
         link_full_duplex    : out STD_LOGIC;
         
-        output_data_enable  : out STD_LOGIC;
-        output_data         : out STD_LOGIC_VECTOR (7 downto 0);
-        output_data_present : out STD_LOGIC;
-        output_data_error   : out STD_LOGIC);
+        output_data_enable  : out STD_LOGIC := '0';
+        output_data         : out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+        output_data_present : out STD_LOGIC := '0';
+        output_data_error   : out STD_LOGIC := '0');
 end detect_speed_and_reassemble_bytes;
 
 architecture Behavioral of detect_speed_and_reassemble_bytes is
-    signal preamble_count        : unsigned(4 downto 0);
+    signal preamble_count        : unsigned(4 downto 0) := (others => '0');
     signal i_link_10mb           : STD_LOGIC := '0';
     signal i_link_100mb          : STD_LOGIC := '0';
     signal i_link_1000mb         : STD_LOGIC := '0';
@@ -54,10 +54,10 @@ architecture Behavioral of detect_speed_and_reassemble_bytes is
     signal last_nibble_data_error   : std_logic := '0';
     signal last_nibble_data_present : std_logic := '0';
 
-    signal i_output_data_enable  : STD_LOGIC;
-    signal i_output_data         : STD_LOGIC_VECTOR (7 downto 0);
-    signal i_output_data_present : STD_LOGIC;
-    signal i_output_data_error   : STD_LOGIC;
+    signal i_output_data_enable  : STD_LOGIC := '0';
+    signal i_output_data         : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+    signal i_output_data_present : STD_LOGIC := '0';
+    signal i_output_data_error   : STD_LOGIC := '0';
 
 begin
     link_10mb        <= i_link_10mb;

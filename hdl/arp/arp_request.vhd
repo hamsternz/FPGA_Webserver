@@ -77,8 +77,8 @@ process(clk)
             arp_sender_ip    <= sender_ip;
             arp_target_hw    <= target_hw;
             arp_target_ip    <= target_ip;
-            if ethertype_valid = '1' and hwtype_valid = '1' and ptype_valid = '1' and len_valid       = '1' and  
-               op_valid        = '1' and valid_count = 41   and packet_data_valid = '0' then
+            if ethertype_valid = '1' and hwtype_valid = '1' and ptype_valid = '1' and   
+               len_valid       = '1' and op_valid     = '1' and valid_count = 41  then
                arp_de           <= '1';
             end if;
 

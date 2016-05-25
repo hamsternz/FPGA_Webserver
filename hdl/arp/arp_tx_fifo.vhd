@@ -25,11 +25,11 @@ entity arp_tx_fifo is
            arp_in_tgt_hw       : in  STD_LOGIC_VECTOR(47 downto 0);
            arp_in_tgt_ip       : in  STD_LOGIC_VECTOR(31 downto 0);
         
-           arp_out_empty       : out std_logic;
-           arp_out_read        : in  std_logic                    := '0';
-           arp_out_op_request  : out std_logic;
-           arp_out_tgt_hw      : out std_logic_vector(47 downto 0);
-           arp_out_tgt_ip      : out std_logic_vector(31 downto 0));
+           arp_out_empty       : out std_logic := '0';
+           arp_out_read        : in  std_logic := '0';
+           arp_out_op_request  : out std_logic := '0';
+           arp_out_tgt_hw      : out std_logic_vector(47 downto 0) := (others => '0');
+           arp_out_tgt_ip      : out std_logic_vector(31 downto 0) := (others => '0'));
 end arp_tx_fifo;
 
 architecture Behavioral of arp_tx_fifo is

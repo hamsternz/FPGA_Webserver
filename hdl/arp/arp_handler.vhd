@@ -80,20 +80,20 @@ entity arp_handler is
     generic (
         our_mac     : std_logic_vector(47 downto 0) := (others => '0');
         our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
-    port (  clk              : in  STD_LOGIC;
-            packet_in_valid  : in  STD_LOGIC;
-            packet_in_data   : in  STD_LOGIC_VECTOR (7 downto 0);
+    port (  clk                : in  STD_LOGIC;
+            packet_in_valid    : in  STD_LOGIC;
+            packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
             -- For receiving data from the PHY        
-            packet_out_req   : out std_logic := '0';
-            packet_out_grant : in  std_logic := '0';
-            packet_out_valid : out std_logic;         
-            packet_out_data  : out std_logic_vector(7 downto 0);         
+            packet_out_request : out std_logic := '0';
+            packet_out_granted : in  std_logic := '0';
+            packet_out_valid   : out std_logic;         
+            packet_out_data    : out std_logic_vector(7 downto 0);         
              -- to enable IP->MAC lookup for outbound packets
-            lookup_request   : in  std_logic;
-            lookup_ip        : in  std_logic_vector(31 downto 0);
-            lookup_mac       : out std_logic_vector(47 downto 0);
-            lookup_found     : out std_logic;
-            lookup_reply     : out std_logic);
+            lookup_request     : in  std_logic;
+            lookup_ip          : in  std_logic_vector(31 downto 0);
+            lookup_mac         : out std_logic_vector(47 downto 0);
+            lookup_found       : out std_logic;
+            lookup_reply       : out std_logic);
 end arp_handler;
 
 architecture Behavioral of arp_handler is
@@ -166,9 +166,8 @@ architecture Behavioral of arp_handler is
         arp_tgt_hw     : in  std_logic_vector(47 downto 0);
         arp_tgt_ip     : in  std_logic_vector(31 downto 0);
         -- Interface into the Ethernet TX subsystem
-        packet_req    : out std_logic := '0';
-        packet_grant  : in  std_logic := '0';
-        packet_de     : out std_logic := '0'; 
+        packet_request  : out std_logic := '0';
+        packet_granted  : in  std_logic := '0';
         packet_valid  : out std_logic;
         packet_data   : out std_logic_vector(7 downto 0));
     end component;
@@ -214,7 +213,7 @@ process(clk)
             ------------------------------------------------------------
             if arp_in_write = '0' then
                 arp_tx_write           <= '0';
-            elsif arp_in_src_ip(23 downto 0) /= our_ip(23 downto 0) or arp_in_src_ip(7 downto 0) = x"FF" then
+            elsif arp_in_src_ip(23 downto 0) /= our_ip(23 downto 0) or arp_in_src_ip(31 downto 24) = x"FF" then
                 arp_tx_write           <= '0';
             else
                 arp_table(to_integer(unsigned(arp_in_src_ip(31 downto 24)))) <= arp_in_src_hw;
@@ -257,8 +256,8 @@ i_arp_send_packet: arp_send_packet port map (
         arp_tgt_hw      => arp_out_tgt_hw,
         arp_tgt_ip      => arp_out_tgt_ip,
            
-        packet_req      => packet_out_req,
-        packet_grant    => packet_out_grant,
+        packet_request  => packet_out_request,
+        packet_granted  => packet_out_granted,
         packet_data     => packet_out_data, 
         packet_valid    => packet_out_valid);
 
