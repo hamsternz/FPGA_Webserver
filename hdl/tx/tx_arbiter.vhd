@@ -20,6 +20,11 @@ entity tx_arbiter is
            ch0_granted    : out STD_LOGIC;
            ch0_valid      : in  STD_LOGIC;
            ch0_data       : in  STD_LOGIC_VECTOR (7 downto 0);
+
+           ch1_request    : in  STD_LOGIC;
+           ch1_granted    : out STD_LOGIC;
+           ch1_valid      : in  STD_LOGIC;
+           ch1_data       : in  STD_LOGIC_VECTOR (7 downto 0);
     
            merged_data_valid  : out STD_LOGIC;
            merged_data        : out STD_LOGIC_VECTOR (7 downto 0));
@@ -32,9 +37,12 @@ architecture Behavioral of tx_arbiter is
 begin
     request(0)  <= ch0_request;
 	ch0_granted <= grant(0) and request(0);
+
+    request(1)  <= ch1_request;
+	ch1_granted <= grant(1) and request(1);
 	
-	merged_data_valid <= ch0_valid; 
-	merged_data       <= ch0_data; 
+	merged_data_valid <= ch0_valid or ch1_valid; 
+	merged_data       <= ch0_data  or ch0_data; 
 
 process(clk)
     begin  

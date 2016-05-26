@@ -117,6 +117,27 @@ architecture Behavioral of main_design is
     signal packet_arp_valid     : std_logic;         
     signal packet_arp_data      : std_logic_vector(7 downto 0);         
 
+    component icmp_handler is 
+    generic (
+        our_mac     : std_logic_vector(47 downto 0) := (others => '0');
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
+    port (  clk                : in  STD_LOGIC;
+            packet_in_valid    : in  STD_LOGIC;
+            packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
+            -- For receiving data from the PHY        
+            packet_out_request : out std_logic := '0';
+            packet_out_granted : in  std_logic := '0';
+            packet_out_valid   : out std_logic;         
+            packet_out_data    : out std_logic_vector(7 downto 0));
+    end component;
+    signal packet_icmp_request   : std_logic;
+    signal packet_icmp_granted   : std_logic;
+    signal packet_icmp_valid     : std_logic;         
+    signal packet_icmp_data      : std_logic_vector(7 downto 0);         
+
+    -------------------------------------------
+    -- TX Interface
+    -------------------------------------------
     component tx_interface is
     Port ( clk125MHz   : in STD_LOGIC;
            clk125Mhz90 : in STD_LOGIC;
@@ -130,6 +151,11 @@ architecture Behavioral of main_design is
            arp_granted : out STD_LOGIC;
            arp_valid   : in  STD_LOGIC;
            arp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
+           ---
+           icmp_request : in  STD_LOGIC;
+           icmp_granted : out STD_LOGIC;
+           icmp_valid   : in  STD_LOGIC;
+           icmp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
            ---
            eth_txck    : out STD_LOGIC;
            eth_txctl   : out STD_LOGIC;
@@ -220,6 +246,19 @@ i_arp_handler:arp_handler  generic map (
         lookup_found     => open,
         lookup_reply     => open);
 
+i_icmp_handler: icmp_handler  generic map (
+                our_mac => our_mac,
+                our_ip  => our_ip)
+            port map (
+                clk              => clk125MHz,
+                packet_in_valid  => packet_data_valid,
+                packet_in_data   => packet_data,
+                -- For Sending data to the PHY        
+                packet_out_request => packet_icmp_request,
+                packet_out_granted => packet_icmp_granted,
+                packet_out_valid   => packet_icmp_valid,          
+                packet_out_data    => packet_icmp_data);
+
 i_tx_interface: tx_interface port map (
    clk125MHz   => clk125MHz, 
    clk125Mhz90 => clk125Mhz90,
@@ -228,11 +267,16 @@ i_tx_interface: tx_interface port map (
    link_10mb   => link_10mb,
    link_100mb  => link_100mb,
    link_1000mb => link_1000mb,
-   --- First channels 
+   --- ARP channel 
    arp_request => packet_arp_request,
    arp_granted => packet_arp_granted, 
    arp_valid   => packet_arp_valid,
    arp_data    => packet_arp_data,
+   --- ICMP channel
+   icmp_request => packet_icmp_request,
+   icmp_granted => packet_icmp_granted, 
+   icmp_valid   => packet_icmp_valid,
+   icmp_data    => packet_icmp_data,
    ---
    eth_txck    => eth_txck,
    eth_txctl   => eth_txctl,
