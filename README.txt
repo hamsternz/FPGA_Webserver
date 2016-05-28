@@ -15,6 +15,6 @@ TODO LIST OF MINOR ISSUES THAT I DON'T WANT TO FORGET
 * Inbound packet MAC filtering not coded - should only accept packets 
   for 'our_mac' or the broadcast MAC. This could be handled the same as 
   CRC or reception errors (where  the FIFO can be rolled back)
-* Outbound packets are not being send correctly for 10 & 100Mbps speed. 
+* Outbound packets are not being sent correctly for 10 & 100Mbps speed. 
   This requies a 4k FIFO, which will block the arbiter when less then 
   1600 entries are free (enough for a packet an some loop latency)
