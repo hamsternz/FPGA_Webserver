@@ -24,15 +24,15 @@ entity detect_speed_and_reassemble_bytes is
     Port ( clk125Mhz      : in  STD_LOGIC;
         -- Interface to input FIFO
         input_empty         : in  STD_LOGIC;           
-        input_read          : out STD_LOGIC;           
+        input_read          : out STD_LOGIC := '0';           
         input_data          : in  STD_LOGIC_VECTOR (7 downto 0);
         input_data_present  : in  STD_LOGIC;
         input_data_error    : in  STD_LOGIC;
         
-        link_10mb           : out STD_LOGIC;
-        link_100mb          : out STD_LOGIC;
-        link_1000mb         : out STD_LOGIC;
-        link_full_duplex    : out STD_LOGIC;
+        link_10mb           : out STD_LOGIC := '0'; 
+        link_100mb          : out STD_LOGIC := '0';
+        link_1000mb         : out STD_LOGIC := '0';
+        link_full_duplex    : out STD_LOGIC := '0';
         
         output_data_enable  : out STD_LOGIC := '0';
         output_data         : out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');

@@ -28,8 +28,8 @@ entity defragment_and_check_crc is
             input_data         : in  STD_LOGIC_VECTOR (7 downto 0);
             input_data_present : in  STD_LOGIC;
             input_data_error   : in  STD_LOGIC;
-            packet_data_valid  : out STD_LOGIC;
-            packet_data        : out STD_LOGIC_VECTOR (7 downto 0));
+            packet_data_valid  : out STD_LOGIC := '0';
+            packet_data        : out STD_LOGIC_VECTOR (7 downto 0) := (others=>'0'));
 end defragment_and_check_crc;
 
 architecture Behavioral of defragment_and_check_crc is

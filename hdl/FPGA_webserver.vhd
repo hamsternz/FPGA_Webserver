@@ -46,7 +46,7 @@ entity FPGA_webserver is
 end FPGA_webserver;
 
 architecture Behavioral of FPGA_webserver is
-    constant our_mac     : std_logic_vector(47 downto 0) := x"01_23_45_67_89_AB"; -- NOTE this is AB:89:67:45:23:01
+    constant our_mac     : std_logic_vector(47 downto 0) := x"AB_89_67_45_23_02"; -- NOTE this is 02:23:45:67:89:AB
     constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";
     signal phy_ready     : std_logic := '0';
     -----------------------------

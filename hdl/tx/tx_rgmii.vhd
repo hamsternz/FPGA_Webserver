@@ -36,9 +36,9 @@ entity tx_rgmii is
            data_enable : in STD_LOGIC := '1';
            data_error  : in STD_LOGIC;
            
-           eth_txck    : out STD_LOGIC;
-           eth_txctl   : out STD_LOGIC;
-           eth_txd     : out STD_LOGIC_VECTOR (3 downto 0));
+           eth_txck    : out STD_LOGIC := '0';
+           eth_txctl   : out STD_LOGIC := '0';
+           eth_txd     : out STD_LOGIC_VECTOR (3 downto 0) := (others => '0'));
 end tx_rgmii;
 
 architecture Behavioral of tx_rgmii is

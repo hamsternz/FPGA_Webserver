@@ -31,20 +31,23 @@ entity icmp_handler is
             -- For receiving data from the PHY        
             packet_out_request : out std_logic := '0';
             packet_out_granted : in  std_logic := '0';
-            packet_out_valid   : out std_logic;         
-            packet_out_data    : out std_logic_vector(7 downto 0));
+            packet_out_valid   : out std_logic := '0';         
+            packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
 end icmp_handler;
 
 architecture Behavioral of icmp_handler is
 
     component icmp_extract_ethernet_header
+    generic (
+        our_mac     : std_logic_vector(47 downto 0) := (others => '0'));
     Port ( clk            : in  STD_LOGIC;
            data_valid_in  : in  STD_LOGIC;
            data_in        : in  STD_LOGIC_VECTOR (7 downto 0);
            data_valid_out : out STD_LOGIC;
            data_out       : out STD_LOGIC_VECTOR (7 downto 0);
            
-           ether_is_ipv4  : out STD_LOGIC; 
+           ether_type     : out STD_LOGIC_VECTOR (15 downto 0); 
+           ether_dst_mac  : out STD_LOGIC_VECTOR (47 downto 0);
            ether_src_mac  : out STD_LOGIC_VECTOR (47 downto 0));
     end component;
     signal ether_extracted_data_valid : STD_LOGIC := '0';
@@ -53,6 +56,8 @@ architecture Behavioral of icmp_handler is
     signal ether_src_mac             : STD_LOGIC_VECTOR (47 downto 0) := (others => '0');
 
     component icmp_extract_ip_header 
+    generic (
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( clk                : in  STD_LOGIC;
            data_valid_in      : in  STD_LOGIC;
            data_in            : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -108,35 +113,98 @@ architecture Behavioral of icmp_handler is
     signal icmp_identifier : STD_LOGIC_VECTOR (15 downto 0);           
     signal icmp_sequence   : STD_LOGIC_VECTOR (15 downto 0);           
 
+    component icmp_build_reply 
+    generic (
+        our_mac     : std_logic_vector(47 downto 0) := (others => '0');
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
+    Port ( clk                : in  STD_LOGIC;
+           data_valid_in      : in  STD_LOGIC;
+           data_in            : in  STD_LOGIC_VECTOR (7 downto 0);
+           data_valid_out     : out STD_LOGIC;
+           data_out           : out STD_LOGIC_VECTOR (7 downto 0);
+
+           ether_is_ipv4      : in  STD_LOGIC; 
+           ether_src_mac      : in  STD_LOGIC_VECTOR (47 downto 0);
+
+           ip_version         : in  STD_LOGIC_VECTOR (3 downto 0);
+           ip_type_of_service : in  STD_LOGIC_VECTOR (7 downto 0);
+           ip_length          : in  STD_LOGIC_VECTOR (15 downto 0);
+           ip_identification  : in  STD_LOGIC_VECTOR (15 downto 0);
+           ip_flags           : in  STD_LOGIC_VECTOR (2 downto 0);
+           ip_fragment_offset : in  STD_LOGIC_VECTOR (12 downto 0);
+           ip_ttl             : in  STD_LOGIC_VECTOR (7 downto 0);
+           ip_protocol        : in  STD_LOGIC_VECTOR (7 downto 0);
+           ip_checksum        : in  STD_LOGIC_VECTOR (15 downto 0);
+           ip_src_ip          : in  STD_LOGIC_VECTOR (31 downto 0);
+           ip_dest_ip         : in  STD_LOGIC_VECTOR (31 downto 0);           
+           
+           icmp_type          : in  STD_LOGIC_VECTOR (7 downto 0);
+           icmp_code          : in  STD_LOGIC_VECTOR (7 downto 0);
+           icmp_checksum      : in  STD_LOGIC_VECTOR (15 downto 0);
+           icmp_identifier    : in  STD_LOGIC_VECTOR (15 downto 0);
+           icmp_sequence      : in  STD_LOGIC_VECTOR (15 downto 0));           
+    end component;
+
+    component icmp_commit_buffer
+    Port ( clk                : in  STD_LOGIC;
+           data_valid_in      : in  STD_LOGIC;
+           data_in            : in  STD_LOGIC_VECTOR (7 downto 0);
+           packet_out_request : out std_logic := '0';
+           packet_out_granted : in  std_logic := '0';
+           packet_out_valid   : out std_logic := '0';         
+           packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
+    end component;
+
+    -------------------------------------------
+    -- Debugging
+    -------------------------------------------    
+    COMPONENT ila_0
+    PORT (
+        clk    : IN STD_LOGIC;
+        probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe2 : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe5 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+    );
+    END COMPONENT ;
+    
 begin
-i_icmp_extracted_ethernet_header: icmp_extract_ethernet_header port map (
+i_icmp_extracted_ethernet_header: icmp_extract_ethernet_header generic map (
+    our_mac => our_mac)
+  port map (
     clk            => clk,
     data_valid_in  => packet_in_valid,
     data_in        => packet_in_data,
     data_valid_out => ether_extracted_data_valid,
     data_out       => ether_extracted_data,
        
-    ether_is_ipv4  => ether_is_ipv4, 
+    ether_type     => open,
+    ether_dst_mac  => open, 
     ether_src_mac  => ether_src_mac);
 
-i_icmp_extract_ip_header: icmp_extract_ip_header port map ( 
-    clk            => clk,
-    data_valid_in  => ether_extracted_data_valid,
-    data_in        => ether_extracted_data,
-    data_valid_out => ip_extracted_data_valid,
-    data_out       => ip_extracted_data,
     
-    ip_version         => ip_version,
-    ip_type_of_service => ip_type_of_service,
-    ip_length          => ip_length,
-    ip_identification  => ip_identification,
-    ip_flags           => ip_flags,
-    ip_fragment_offset => ip_fragment_offset,
-    ip_ttl             => ip_ttl,
-    ip_protocol        => ip_protocol,
-    ip_checksum        => ip_checksum,
-    ip_src_ip          => ip_src_ip,
-    ip_dest_ip         => ip_dest_ip);           
+i_icmp_extract_ip_header: icmp_extract_ip_header generic map (
+        our_ip  => our_ip)
+    port map ( 
+        clk            => clk,
+        data_valid_in  => ether_extracted_data_valid,
+        data_in        => ether_extracted_data,
+        data_valid_out => ip_extracted_data_valid,
+        data_out       => ip_extracted_data,
+        
+        ip_version         => ip_version,
+        ip_type_of_service => ip_type_of_service,
+        ip_length          => ip_length,
+        ip_identification  => ip_identification,
+        ip_flags           => ip_flags,
+        ip_fragment_offset => ip_fragment_offset,
+        ip_ttl             => ip_ttl,
+        ip_protocol        => ip_protocol,
+        ip_checksum        => ip_checksum,
+        ip_src_ip          => ip_src_ip,
+        ip_dest_ip         => ip_dest_ip);           
 
 i_icmp_extract_icmp_header : icmp_extract_icmp_header port map ( 
     clk            => clk,
@@ -152,5 +220,47 @@ i_icmp_extract_icmp_header : icmp_extract_icmp_header port map (
     icmp_identifier => icmp_identifier,
     icmp_sequence   => icmp_sequence);           
 
+i_ila_0: ila_0 port map (
+    clk       => clk,
+    probe0(0) => packet_in_valid, 
+    probe1    => packet_in_data,
+    probe2(0) => ether_extracted_data_valid, 
+    probe3(0) => ip_extracted_data_valid,
+    probe4(0) => icmp_extracted_data_valid,
+    probe5(0) => packet_out_valid);
 
+
+i_icmp_build_reply: icmp_build_reply generic map (
+        our_mac => our_mac,
+        our_ip  => our_ip)
+    port map ( 
+        clk                => clk,
+    
+        data_valid_in      => icmp_extracted_data_valid,
+        data_in            => icmp_extracted_data,
+        data_valid_out     => packet_out_valid,
+        data_out           => packet_out_data,
+    
+        ether_is_ipv4      => ether_is_ipv4, 
+        ether_src_mac      => ether_src_mac,
+    
+        ip_version         => ip_version,
+        ip_type_of_service => ip_type_of_service,
+        ip_length          => ip_length,
+        ip_identification  => ip_identification,
+        ip_flags           => ip_flags,
+        ip_fragment_offset => ip_fragment_offset,
+        ip_ttl             => ip_ttl,
+        ip_protocol        => ip_protocol,
+        ip_checksum        => ip_checksum,
+        ip_src_ip          => ip_src_ip,
+        ip_dest_ip         => ip_dest_ip,           
+           
+        icmp_type          => icmp_type,
+        icmp_code          => icmp_code,
+        icmp_checksum      => icmp_checksum,
+        icmp_identifier    => icmp_identifier,
+        icmp_sequence      => icmp_sequence);
+
+           
 end Behavioral;

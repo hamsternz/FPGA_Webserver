@@ -199,7 +199,7 @@ i_detect_speed_and_reassemble_bytes: detect_speed_and_reassemble_bytes port map 
    output_data         => spaced_out_data,
    output_data_present => spaced_out_data_present,
    output_data_error   => spaced_out_data_error);
-    ----------------------------------------------------------------------
+   ----------------------------------------------------------------------
     -- Even at gigabit speeds the stream of bytes might include 
     -- gaps due to differences between the source and destination clocks.
     -- This module packs all the bytes in a packet close togeather, so
@@ -219,13 +219,6 @@ i_defragment_and_check_crc: defragment_and_check_crc port map (
     
     packet_data_valid  => packet_data_valid,
     packet_data        => packet_data);
-
---i_ila_0: ila_0 port map (
---    clk       => clk125Mhz,
---    probe0(0) => packet_arp_request, 
---    probe1(0) => packet_arp_granted, 
---    probe2    => packet_arp_data,
---    probe3(0) => packet_arp_valid);
 
 i_arp_handler:arp_handler  generic map (
         our_mac => our_mac,

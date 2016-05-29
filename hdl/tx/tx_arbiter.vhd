@@ -42,7 +42,7 @@ begin
 	ch1_granted <= grant(1) and request(1);
 	
 	merged_data_valid <= ch0_valid or ch1_valid; 
-	merged_data       <= ch0_data  or ch0_data; 
+	merged_data       <= ch0_data  or ch1_data; 
 
 process(clk)
     begin  

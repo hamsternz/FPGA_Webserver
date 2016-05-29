@@ -24,6 +24,8 @@ use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
 entity icmp_extract_ip_header is
+    generic (
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( clk                : in  STD_LOGIC;
 
            data_valid_in      : in  STD_LOGIC;
@@ -45,8 +47,35 @@ entity icmp_extract_ip_header is
 end icmp_extract_ip_header;
 
 architecture Behavioral of icmp_extract_ip_header is
-    signal count          : unsigned(4 downto 0)         := (others => '0');
+    signal count          : unsigned(6 downto 0)         := (others => '0');
+    signal header_len     : unsigned(6 downto 0)         := (others => '0');
+
+    signal i_ip_version         : STD_LOGIC_VECTOR ( 3 downto 0)  := (others => '0');
+    signal i_ip_type_of_service : STD_LOGIC_VECTOR ( 7 downto 0)  := (others => '0');
+    signal i_ip_length          : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal i_ip_identification  : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal i_ip_flags           : STD_LOGIC_VECTOR ( 2 downto 0)  := (others => '0');
+    signal i_ip_fragment_offset : STD_LOGIC_VECTOR (12 downto 0)  := (others => '0');
+    signal i_ip_ttl             : STD_LOGIC_VECTOR ( 7 downto 0)  := (others => '0');
+    signal i_ip_protocol        : STD_LOGIC_VECTOR ( 7 downto 0)  := (others => '0');
+    signal i_ip_checksum        : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal i_ip_src_ip          : STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
+    signal i_ip_dest_ip         : STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');           
+
 begin
+
+    ip_version         <= i_ip_version;
+    ip_type_of_service <= i_ip_type_of_service;
+    ip_length          <= i_ip_length;
+    ip_identification  <= i_ip_identification;
+    ip_flags           <= i_ip_flags;
+    ip_fragment_offset <= i_ip_fragment_offset;
+    ip_ttl             <= i_ip_ttl;
+    ip_protocol        <= i_ip_protocol;
+    ip_checksum        <= i_ip_checksum;
+    ip_src_ip          <= i_ip_src_ip;
+    ip_dest_ip         <= i_ip_dest_ip;
+
 process(clk)
     begin
         if rising_edge(clk) then
@@ -54,41 +83,38 @@ process(clk)
             if data_valid_in = '1' then
                 -- Note, at count of zero,  
                 case count is
-                    when "00000" => NULL;
-                    when "00001" => NULL;
-                    when "00010" => NULL;
-                    when "00011" => NULL;
-                    when "00100" => NULL;
-                    when "00101" => NULL;
-                    when "00110" => NULL;
-                    when "00111" => NULL;
-                    when "01000" => NULL;
-                    when "01001" => NULL;
-                    when "01010" => NULL;
-                    when "01011" => NULL;
-                    when "01100" => NULL;
-                    when "01101" => NULL;
-                    when "01110" => NULL;
-                    when "01111" => NULL;
-                    when "10000" => NULL;
-                    when "10001" => NULL;
-                    when "10010" => NULL;
-                    when "10011" => NULL;
-                    when "10100" => NULL;
-                    when "10101" => NULL;
-                    when "10110" => NULL;
-                    when "10111" => NULL;
-                    when "11000" => NULL;
-                    when "11001" => NULL;
-                    when "11010" => NULL;
-                    when "11011" => NULL;
-                    when "11100" => NULL;
-                    when "11101" => NULL;
-                    when "11110" => NULL;
-                    when others => data_valid_out <= data_valid_in;
-                                   data_out       <= data_in;
+                    when "0000000" => i_ip_version                      <= data_in(7 downto 4);
+                                      header_len(5 downto 2)            <= unsigned(data_in(3 downto 0));
+                    when "0000001" => i_ip_type_of_service              <= data_in;
+                    when "0000010" => i_ip_length(15 downto 8)          <= data_in;
+                    when "0000011" => i_ip_length( 7 downto 0)          <= data_in;
+                    when "0000100" => i_ip_identification(15 downto 8)  <= data_in;
+                    when "0000101" => i_ip_identification( 7 downto 0)  <= data_in;
+                    when "0000110" => i_ip_fragment_offset(12 downto 8) <= data_in(4 downto 0);
+                                      i_ip_flags                        <= data_in(7 downto 5);
+                    when "0000111" => i_ip_fragment_offset( 7 downto 0) <= data_in;
+                    when "0001000" => i_ip_ttl                          <= data_in;
+                    when "0001001" => i_ip_protocol                     <= data_in;
+                    when "0001010" => i_ip_checksum(15 downto 8)        <= data_in;
+                    when "0001011" => i_ip_checksum( 7 downto 0)        <= data_in;
+                    when "0001100" => i_ip_src_ip( 7 downto 0)          <= data_in;
+                    when "0001101" => i_ip_src_ip(15 downto 8)          <= data_in;
+                    when "0001110" => i_ip_src_ip(23 downto 16)         <= data_in;
+                    when "0001111" => i_ip_src_ip(31 downto 24)         <= data_in;
+                    when "0010000" => i_ip_dest_ip( 7 downto 0)         <= data_in;
+                    when "0010001" => i_ip_dest_ip(15 downto 8)         <= data_in;
+                    when "0010010" => i_ip_dest_ip(23 downto 16)        <= data_in;
+                    when "0010011" => i_ip_dest_ip(31 downto 24)        <= data_in;
+                    when others    => null; 
                 end case;
-                if count /= "11111" then
+                -- So that additional IP options get dropped
+                if unsigned(count) >= unsigned(header_len) and unsigned(count) > 4
+                    and i_ip_version = x"4" and i_ip_protocol = x"01"
+                    and i_ip_dest_ip = our_ip then
+                    data_valid_out                   <= data_valid_in;
+                    data_out                         <= data_in;
+                end if;
+                if count /= "1111111" then
                     count <= count+1;
                 end if;
             else

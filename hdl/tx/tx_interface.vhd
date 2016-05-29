@@ -98,6 +98,19 @@ architecture Behavioral of tx_interface is
     signal data_enable : STD_LOGIC;
     signal data_error  : STD_LOGIC;
 
+    -------------------------------------------
+    -- Debugging
+    -------------------------------------------    
+    COMPONENT ila_0
+    PORT (
+        clk    : IN STD_LOGIC;
+        probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe2 : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
+        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+    );
+    END COMPONENT ;
+
     component tx_rgmii is
     Port ( clk         : in STD_LOGIC;
            clk90       : in STD_LOGIC;
@@ -129,6 +142,13 @@ i_tx_arbiter: tx_arbiter generic map(idle_time => "111111") Port map (
     
     merged_data_valid => merged_data_valid,
     merged_data       => merged_data);
+
+--i_ila_0: ila_0 port map (
+--    clk       => clk125Mhz,
+--    probe0(0) => merged_data_valid, 
+--    probe1(0) => merged_data_valid, 
+--    probe2    => merged_data,
+--    probe3(0) => merged_data_valid);
 
 i_tx_add_crc32: tx_add_crc32 port map (
     clk              => clk125MHz,
