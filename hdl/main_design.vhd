@@ -168,14 +168,25 @@ architecture Behavioral of main_design is
     PORT (
         clk    : IN STD_LOGIC;
         probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-        probe1 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-        probe2 : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+        probe1 : IN STD_LOGIC_VECTOR(7 DOWNTO 0); 
+        probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe5 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
     );
     END COMPONENT ;
  
 begin
    status  <= link_full_duplex & link_1000mb & link_100mb & link_10mb;
+
+--i_ila_0: ila_0 port map (
+--    clk       => clk125MHz,
+--    probe0(0) => input_data_present, 
+--    probe1    => input_data,
+--    probe2(0) => spaced_out_data_enable, 
+--    probe3(0) => packet_data_valid,
+--    probe4(0) => link_1000mb,
+--    probe5(0) => packet_data_valid);
 
     ----------------------------------------------------------------------
     -- As well as converting nibbles to bytes (for the slowe speeds)

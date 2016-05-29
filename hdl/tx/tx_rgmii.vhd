@@ -60,9 +60,9 @@ architecture Behavioral of tx_rgmii is
     signal tx_ready            : STD_LOGIC;
     signal tx_ready_meta       : STD_LOGIC;
 
-    ATTRIBUTE IOB : STRING ;
-    ATTRIBUTE IOB OF dout    : signal IS "TRUE";
-    ATTRIBUTE IOB OF doutctl : signal IS "TRUE";
+--    ATTRIBUTE IOB : STRING ;
+--    ATTRIBUTE IOB OF dout    : signal IS "TRUE";
+--    ATTRIBUTE IOB OF doutctl : signal IS "TRUE";
 begin
 
     times_3 <= ("0" & enable_frequency & "0") + ("00" & enable_frequency);  

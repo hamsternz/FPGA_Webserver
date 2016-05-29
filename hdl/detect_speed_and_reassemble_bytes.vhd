@@ -111,16 +111,17 @@ reassemble_data:process(clk125Mhz)
                         i_output_data_present <= input_data_present;
                         i_output_data_error   <= input_data_error;
                         active_data           <= input_data_present;
+                        preamble_count <= (others => '0');
                      else
                         -- Check we see a valid preamble sequence
                         -- We see two nibbles of the preamble every
                         -- time we see a byte
                         if input_data_present = '1' then
                             if input_data = x"55" then
-                                if preamble_count (4) = '0' then
+                                if preamble_count(4 downto 2) /= "111" then
                                     preamble_count <= preamble_count+2;
                                 end if;
-                            elsif input_data = x"D5" and preamble_count(4) = '0' then
+                            elsif input_data = x"D5" and preamble_count(4 downto 2) /= "111" then
                                 active_data <= '1';
                             end if;
                         else
