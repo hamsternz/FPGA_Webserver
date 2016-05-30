@@ -216,8 +216,7 @@ i_main_design: main_design generic map (
 process(clk125Mhz) 
     begin
         if rising_edge(clk125Mhz) then
-            -- assign any data on UDP port 5140 to the LEDs
-            
+            -- assign any data on UDP port 5140 (0x1414) to the LEDs
             if udp_rx_valid_last = '0'  and udp_rx_valid = '1' and udp_rx_dst_port = x"1414" then  
                 leds <= udp_rx_data;
             end if;

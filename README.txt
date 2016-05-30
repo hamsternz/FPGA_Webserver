@@ -6,6 +6,7 @@ Status
 ======
 * ARP works at Gigabit speeds
 * ICMP is working at Gigabit speeds
+* UDP RX works
 
 TODO LIST OF MINOR ISSUES THAT I DON'T WANT TO FORGET
 =====================================================
@@ -20,6 +21,13 @@ Inbound packets
 * Inbound packet MAC filtering not coded - should only accept packets 
   for 'our_mac' or the broadcast MAC. This could be handled the same as 
   CRC or reception errors (where  the FIFO can be rolled back)
+
+UDP Support
+-----------
+* Only reception of packets is currently coded.
+* For short packets, the padding is presented as data (i.e. the length 
+  field in the headers is not respected)
+* IP Checksum is not being validated
 
 ICMP Support
 ------------
