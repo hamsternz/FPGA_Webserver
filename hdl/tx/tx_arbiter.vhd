@@ -47,7 +47,7 @@ begin
 	ch1_granted <= grant(1) and request(1);
 
     request(2)  <= ch2_request;
-	ch2_granted <= grant(2) and request(2);
+    ch2_granted <= grant(2) and request(2);
 	
 	merged_data_valid <= ch0_valid or ch1_valid or ch2_valid; 
 	merged_data       <= ch0_data  or ch1_data  or ch2_data; 

@@ -38,7 +38,7 @@ entity udp_handler is
 
             -- For sending data to the PHY        
             packet_out_request : out std_logic := '0';
-            packet_out_granted : in  std_logic := '0';
+            packet_out_granted : in  std_logic;
             packet_out_valid   : out std_logic := '0';         
             packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
 end udp_handler;
