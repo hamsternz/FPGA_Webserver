@@ -42,6 +42,11 @@ entity tx_interface is
            icmp_valid   : in  STD_LOGIC;
            icmp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
            ---
+           udp_request : in  STD_LOGIC;
+           udp_granted : out STD_LOGIC;
+           udp_valid   : in  STD_LOGIC;
+           udp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
+           ---
            eth_txck    : out STD_LOGIC;
            eth_txctl   : out STD_LOGIC;
            eth_txd     : out STD_LOGIC_VECTOR (3 downto 0));
@@ -63,6 +68,11 @@ architecture Behavioral of tx_interface is
            ch1_granted       : out STD_LOGIC;
            ch1_valid         : in  STD_LOGIC;
            ch1_data          : in  STD_LOGIC_VECTOR (7 downto 0);
+
+           ch2_request       : in  STD_LOGIC;
+           ch2_granted       : out STD_LOGIC;
+           ch2_valid         : in  STD_LOGIC;
+           ch2_data          : in  STD_LOGIC_VECTOR (7 downto 0);
 
            merged_data_valid : out STD_LOGIC;
            merged_data       : out STD_LOGIC_VECTOR (7 downto 0));
@@ -139,6 +149,11 @@ i_tx_arbiter: tx_arbiter generic map(idle_time => "111111") Port map (
     ch1_granted       => icmp_granted,
     ch1_data          => icmp_data,
     ch1_valid         => icmp_valid,
+    
+    ch2_request       => udp_request,
+    ch2_granted       => udp_granted,
+    ch2_data          => udp_data,
+    ch2_valid         => udp_valid,
     
     merged_data_valid => merged_data_valid,
     merged_data       => merged_data);

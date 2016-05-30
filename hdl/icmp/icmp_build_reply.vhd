@@ -82,6 +82,7 @@ begin
     flipped_our_ip <= our_ip(7 downto 0)      & our_ip(15 downto 8)      & our_ip(23 downto 16)      & our_ip(31 downto 24);    
 
 process(clk)
+    variable v_icmp_check : unsigned (16 downto 0); 
     begin
         if rising_edge(clk) then
             -- This splits the IP checksumming over four cycles
@@ -109,11 +110,14 @@ process(clk)
             end if;
 
             if count = 0 and data_valid_in = '1' then
-
+                v_icmp_check(15 downto 0) := unsigned(icmp_checksum);
+                v_icmp_check              := v_icmp_check + 8;
+                v_icmp_check              := v_icmp_check + v_icmp_check(16 downto 16);
+                 
                 h_ether_src_mac   <= ether_src_mac;
                 h_ip_src_ip       <= ip_src_ip;
                 h_ip_length       <= ip_length;
-                h_icmp_checksum   <= std_logic_vector(unsigned(icmp_checksum) + 8);
+                h_icmp_checksum   <= std_logic_vector(v_icmp_check(15 downto 0));
                 h_icmp_identifier <= icmp_identifier;
                 h_icmp_sequence   <= icmp_sequence;
             end if;

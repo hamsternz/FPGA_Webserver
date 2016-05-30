@@ -25,8 +25,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 
 entity main_design is
     generic (
-        our_mac     : std_logic_vector(47 downto 0) := (others => '0');
-        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
+        our_mac       : std_logic_vector(47 downto 0) := (others => '0');
+        our_netmask   : std_logic_vector(31 downto 0) := (others => '0');
+        our_ip        : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( 
        clk125Mhz          : in  STD_LOGIC;
        clk125Mhz90        : in  STD_LOGIC;
@@ -38,13 +39,22 @@ entity main_design is
 
        phy_ready          : in  STD_LOGIC;
        status             : out STD_LOGIC_VECTOR (3 downto 0);
-       
+
+        -- data received over UDP
+        udp_rx_valid         : out std_logic := '0';
+        udp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+        udp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+        udp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+        udp_rx_dst_broadcast : out std_logic := '0';
+        udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
+   
        eth_txck           : out std_logic := '0';
        eth_txctl          : out std_logic := '0';
        eth_txd            : out std_logic_vector(3 downto 0) := (others => '0'));
 end main_design;
 
 architecture Behavioral of main_design is
+    constant our_broadcast : std_logic_vector(31 downto 0) := our_ip or (not our_netmask);
 
     component detect_speed_and_reassemble_bytes is
     Port ( clk125Mhz      : in  STD_LOGIC;
@@ -135,6 +145,43 @@ architecture Behavioral of main_design is
     signal packet_icmp_valid     : std_logic;         
     signal packet_icmp_data      : std_logic_vector(7 downto 0);         
 
+    component udp_handler is 
+    generic (
+        our_mac       : std_logic_vector(47 downto 0) := (others => '0');
+        our_ip        : std_logic_vector(31 downto 0) := (others => '0');
+        our_broadcast : std_logic_vector(31 downto 0) := (others => '0'));
+    port (  clk                : in  STD_LOGIC;
+            -- For receiving data from the PHY        
+            packet_in_valid    : in  STD_LOGIC;
+            packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
+
+            -- data received over UDP
+            udp_rx_valid         : out std_logic := '0';
+            udp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+            udp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+            udp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+            udp_rx_dst_broadcast : out std_logic := '0';
+            udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
+
+	    -- data to be sent over UDP
+            udp_tx_busy          : out std_logic := '0';
+            udp_tx_valid         : in  std_logic := '0';
+            udp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+            udp_tx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+            udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
+            udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+
+            -- For sending data to the PHY        
+            packet_out_request : out std_logic := '0';
+            packet_out_granted : in  std_logic := '0';
+            packet_out_valid   : out std_logic := '0';         
+            packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
+    end component;
+    signal packet_udp_request   : std_logic;
+    signal packet_udp_granted   : std_logic;
+    signal packet_udp_valid     : std_logic;         
+    signal packet_udp_data      : std_logic_vector(7 downto 0);         
+
     -------------------------------------------
     -- TX Interface
     -------------------------------------------
@@ -156,6 +203,11 @@ architecture Behavioral of main_design is
            icmp_granted : out STD_LOGIC;
            icmp_valid   : in  STD_LOGIC;
            icmp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
+           ---
+           udp_request : in  STD_LOGIC;
+           udp_granted : out STD_LOGIC;
+           udp_valid   : in  STD_LOGIC;
+           udp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
            ---
            eth_txck    : out STD_LOGIC;
            eth_txctl   : out STD_LOGIC;
@@ -263,27 +315,66 @@ i_icmp_handler: icmp_handler  generic map (
                 packet_out_valid   => packet_icmp_valid,          
                 packet_out_data    => packet_icmp_data);
 
+i_udp_handler: udp_handler 
+    generic map (
+        our_mac       => our_mac, 
+        our_ip        => our_ip, 
+        our_broadcast => our_broadcast)
+    port map ( 
+        clk => clk125MHz,
+        -- For receiving data from the PHY        
+        packet_in_valid => packet_data_valid,
+        packet_in_data  => packet_data,
+
+        -- data received over UDP. Note IP address and port numbers
+        -- are only valid for the first cycle of a packet each
+        udp_rx_valid         => udp_rx_valid,
+        udp_rx_data          => udp_rx_data,
+        udp_rx_src_ip        => udp_rx_src_ip,
+        udp_rx_src_port      => udp_rx_src_port,
+        udp_rx_dst_broadcast => udp_rx_dst_broadcast,
+        udp_rx_dst_port      => udp_rx_dst_port,
+
+	    -- data to be sent over UDP
+        udp_tx_busy          => open,
+        udp_tx_valid         => '0',
+        udp_tx_data          => (others => '0'),
+        udp_tx_src_port      => (others => '0'),
+        udp_tx_dst_ip        => (others => '0'),
+        udp_tx_dst_port      => (others => '0'),
+
+        -- For sending data to the PHY        
+        packet_out_request => packet_udp_request, 
+        packet_out_granted => packet_udp_granted,
+        packet_out_valid   => packet_udp_valid,         
+        packet_out_data    => packet_udp_data);
+
 i_tx_interface: tx_interface port map (
-   clk125MHz   => clk125MHz, 
-   clk125Mhz90 => clk125Mhz90,
-   --- Link status
-   phy_ready   => phy_ready,
-   link_10mb   => link_10mb,
-   link_100mb  => link_100mb,
-   link_1000mb => link_1000mb,
-   --- ARP channel 
-   arp_request => packet_arp_request,
-   arp_granted => packet_arp_granted, 
-   arp_valid   => packet_arp_valid,
-   arp_data    => packet_arp_data,
-   --- ICMP channel
-   icmp_request => packet_icmp_request,
-   icmp_granted => packet_icmp_granted, 
-   icmp_valid   => packet_icmp_valid,
-   icmp_data    => packet_icmp_data,
-   ---
-   eth_txck    => eth_txck,
-   eth_txctl   => eth_txctl,
-   eth_txd     => eth_txd);
-        
+        clk125MHz   => clk125MHz, 
+        clk125Mhz90 => clk125Mhz90,
+        --- Link status
+        phy_ready   => phy_ready,
+        link_10mb   => link_10mb,
+        link_100mb  => link_100mb,
+        link_1000mb => link_1000mb,
+        --- ARP channel 
+        arp_request => packet_arp_request,
+        arp_granted => packet_arp_granted, 
+        arp_valid   => packet_arp_valid,
+        arp_data    => packet_arp_data,
+        --- ICMP channel
+        icmp_request => packet_icmp_request,
+        icmp_granted => packet_icmp_granted, 
+        icmp_valid   => packet_icmp_valid,
+        icmp_data    => packet_icmp_data,
+        --- UDP channel
+        udp_request => packet_udp_request,
+        udp_granted => packet_udp_granted, 
+        udp_valid   => packet_udp_valid,
+        udp_data    => packet_udp_data,
+        ---
+        eth_txck    => eth_txck,
+        eth_txctl   => eth_txctl,
+        eth_txd     => eth_txd);
+
 end Behavioral;

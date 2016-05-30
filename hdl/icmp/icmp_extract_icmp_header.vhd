@@ -1,14 +1,10 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
+-- Engineer: Mike Field <hamster@snap.net.nz> 
 -- 
--- Create Date: 26.05.2016 22:07:06
--- Design Name: 
 -- Module Name: icmp_extract_icmp_header - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
+--
+-- Description: Remove the ICMP header details off of the data packet
+--              and pass the data on if valid. 
 -- 
 -- Dependencies: 
 -- 
@@ -17,8 +13,6 @@
 -- Additional Comments:
 -- 
 ----------------------------------------------------------------------------------
-
-
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -44,13 +38,11 @@ architecture Behavioral of icmp_extract_icmp_header is
     signal i_icmp_identifier : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
     signal i_icmp_sequence   : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
 begin
-
     icmp_type       <= i_icmp_type;
     icmp_code       <= i_icmp_code;
     icmp_checksum   <= i_icmp_checksum;
     icmp_identifier <= i_icmp_identifier;
     icmp_sequence   <= i_icmp_sequence;
-
 
 process(clk)
     begin

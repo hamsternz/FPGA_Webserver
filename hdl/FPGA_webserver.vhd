@@ -25,7 +25,7 @@ use IEEE.STD_LOGIC_1164.ALL;
 entity FPGA_webserver is
     Port (  clk100MHz : in    std_logic; -- system clock
             switches  : in    std_logic_vector(3 downto 0);
-            leds      : out   std_logic_vector(3 downto 0);
+            leds      : out   std_logic_vector(7 downto 0);
             
             -- Ethernet Control signals
             eth_int_b : in    std_logic; -- interrupt
@@ -48,6 +48,7 @@ end FPGA_webserver;
 architecture Behavioral of FPGA_webserver is
     constant our_mac     : std_logic_vector(47 downto 0) := x"AB_89_67_45_23_02"; -- NOTE this is 02:23:45:67:89:AB
     constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";
+    constant our_netmask : std_logic_vector(31 downto 0) := x"00_FF_FF_FF";
     signal phy_ready     : std_logic := '0';
     -----------------------------
     -- For the clocking 
@@ -111,6 +112,7 @@ architecture Behavioral of FPGA_webserver is
     component main_design is
     generic (
         our_mac     : std_logic_vector(47 downto 0) := (others => '0');
+        our_netmask : std_logic_vector(31 downto 0) := (others => '0');
         our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( clk125Mhz          : in  STD_LOGIC;
            clk125Mhz90        : in  STD_LOGIC;
@@ -122,11 +124,26 @@ architecture Behavioral of FPGA_webserver is
 
            phy_ready          : in  STD_LOGIC;
            status             : out STD_LOGIC_VECTOR (3 downto 0);
-           
+
+           -- data received over UDP
+           udp_rx_valid         : out std_logic := '0';
+           udp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+           udp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+           udp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+           udp_rx_dst_broadcast : out std_logic := '0';
+           udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
+                  
            eth_txck           : out std_logic := '0';
            eth_txctl          : out std_logic := '0';
            eth_txd            : out std_logic_vector(3 downto 0) := (others => '0'));
     end component;
+
+    signal udp_rx_valid         : std_logic := '0';
+    signal udp_rx_data          : std_logic_vector(7 downto 0) := (others => '0');
+    signal udp_rx_src_ip        : std_logic_vector(31 downto 0) := (others => '0');
+    signal udp_rx_src_port      : std_logic_vector(15 downto 0) := (others => '0');
+    signal udp_rx_dst_broadcast : std_logic := '0';
+    signal udp_rx_dst_port      : std_logic_vector(15 downto 0) := (others => '0');
 
 begin
 
@@ -135,6 +152,9 @@ i_clocking: clocking port map (
     clk125MHz   => clk125MHz,
     clk125MHz90 => clk125MHz90); 
 
+    ----------------------------------------
+    -- Control reseting the PHY
+    ----------------------------------------
 i_reset_controller: reset_controller port map (
     clk125mhz => clk125mhz,
     phy_ready => phy_ready,
@@ -164,8 +184,9 @@ i_fifo_rxclk_to_clk125MHz: fifo_rxclk_to_clk125MHz port map (
     data_error      => input_data_error);
 
 i_main_design: main_design generic map (
-        our_mac => our_mac,
-        our_ip  => our_ip
+        our_mac     => our_mac,
+        our_netmask => our_netmask, 
+        our_ip      => our_ip
      ) port map (
      clk125Mhz          => clk125Mhz,
      clk125Mhz90        => clk125Mhz90,
@@ -177,14 +198,28 @@ i_main_design: main_design generic map (
      input_data_error   => input_data_error,
      
      phy_ready          => phy_ready, 
-     status             => leds,
-           
+     status             => open,
+
+    -- data received over UDP
+    udp_rx_valid         => udp_rx_valid,
+    udp_rx_data          => udp_rx_data,
+    udp_rx_src_ip        => udp_rx_src_ip,
+    udp_rx_src_port      => udp_rx_src_port,
+    udp_rx_dst_broadcast => udp_rx_dst_broadcast,
+    udp_rx_dst_port      => udp_rx_dst_port,
+
+              
      eth_txck           => eth_txck,
      eth_txctl          => eth_txctl,
      eth_txd            => eth_txd);
-    ----------------------------------------
-     -- Control reseting the PHY
-     ----------------------------------------
-
-
+     
+process(clk125Mhz) 
+    begin
+        if rising_edge(clk125Mhz) then
+            -- assign any data on UDP port 5140 to the LEDs
+            if udp_rx_valid = '1' and udp_rx_dst_port = x"1414" then  
+                leds <= udp_rx_data;
+            end if;
+        end if;
+    end process;
 end Behavioral;
