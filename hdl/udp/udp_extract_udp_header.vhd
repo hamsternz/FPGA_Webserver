@@ -32,6 +32,8 @@ architecture Behavioral of udp_extract_udp_header is
     signal i_udp_dst_port : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
     signal i_udp_length   : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
     signal i_udp_checksum : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+    -- 'data_count' us used for trimming off padding on the end of the UDP packet 
+    signal data_count     : unsigned(11 downto 0)          := (others => '0');
 begin
     udp_length   <= i_udp_length;
     udp_checksum <= i_udp_checksum;
@@ -43,26 +45,33 @@ process(clk)
         if rising_edge(clk) then
             data_out       <= data_in;
             if data_valid_in = '1' then
-                -- Note, at count of zero,  
                 case count is
-                    when "0000" => i_udp_src_port(7 downto 0)  <= data_in;
-                    when "0001" => i_udp_src_port(15 downto 8) <= data_in;
-                    when "0010" => i_udp_dst_port(7 downto 0)  <= data_in;
-                    when "0011" => i_udp_dst_port(15 downto 8) <= data_in;
-                    when "0100" => i_udp_length(7 downto 0)    <= data_in;
-                    when "0101" => i_udp_length(15 downto 8)   <= data_in;
-                    when "0110" => i_udp_checksum(7 downto 0)  <= data_in;
-                    when "0111" => i_udp_checksum(15 downto 8) <= data_in;
-                    when others => data_valid_out <= data_valid_in;
-                                   data_out       <= data_in;
+                    when "0000" => i_udp_src_port(15 downto 8) <= data_in;
+                    when "0001" => i_udp_src_port( 7 downto 0) <= data_in;
+                    when "0010" => i_udp_dst_port(15 downto 8) <= data_in;
+                    when "0011" => i_udp_dst_port( 7 downto 0) <= data_in;
+                    when "0100" => i_udp_length(15 downto 8)   <= data_in;
+                    when "0101" => i_udp_length( 7 downto 0)   <= data_in;
+                    when "0110" => i_udp_checksum(15 downto 8) <= data_in;
+                    when "0111" => i_udp_checksum( 7 downto 0) <= data_in;
+                    when others => if data_count < unsigned(i_udp_length) then
+                                       data_valid_out <= data_valid_in;
+                                       data_out       <= data_in;
+                                   else
+                                       data_valid_out <= '0';
+                                       data_out       <= data_in;
+                                   end if;
+                                    
                 end case;
                 if count /= "1111" then
                     count <= count+1;
                 end if;
+                data_count <= data_count + 1;
             else
                data_valid_out <= '0';
                data_out       <= data_in;
                count <= (others => '0');
+               data_count <= (others => '0');
             end if;
         end if;
     end process;

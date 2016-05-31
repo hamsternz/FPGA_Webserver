@@ -25,9 +25,10 @@ Inbound packets
 UDP Support
 -----------
 * Only reception of packets is currently coded.
-* For short packets, the padding is presented as data (i.e. the length 
-  field in the headers is not respected)
 * IP Checksum is not being validated
+* UDP Checksum is not being validated
+* A UDP packet with no data will not result in anything that the 
+  consuming design can see (not a bug, a feature?)
 
 ICMP Support
 ------------

@@ -111,6 +111,7 @@ process(clk)
 
             if count = 0 and data_valid_in = '1' then
                 v_icmp_check(15 downto 0) := unsigned(icmp_checksum);
+                v_icmp_check(16)          := '0';
                 v_icmp_check              := v_icmp_check + 8;
                 v_icmp_check              := v_icmp_check + v_icmp_check(16 downto 16);
                  
@@ -174,9 +175,9 @@ process(clk)
                 -------------------------------------
                 -- ICMP Header
                 -------------------------------------
-                when "100011" => data_out <= x"00";                        -- ICMP Type = reply
-                when "100100" => data_out <= x"00";                        -- Code 
-                when "100101" => data_out <= h_icmp_checksum(7 downto 0);    -- Checksum NEED TO ADJUST!
+                when "100011" => data_out <= x"00";                          -- ICMP Type = reply
+                when "100100" => data_out <= x"00";                          -- Code 
+                when "100101" => data_out <= h_icmp_checksum(7 downto 0);    -- Checksum 
                 when "100110" => data_out <= h_icmp_checksum(15 downto 8);   
                 when "100111" => data_out <= h_icmp_identifier(7 downto 0);  -- Identifier
                 when "101000" => data_out <= h_icmp_identifier(15 downto 8);

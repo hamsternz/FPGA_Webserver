@@ -74,7 +74,7 @@ architecture Behavioral of tb_main_design_icmp is
     
     signal arp_src_hw      : std_logic_vector(47 downto 0) := x"a0b3cc4cf9ef";
     signal arp_src_ip      : std_logic_vector(31 downto 0) := x"0A000001";
-    signal arp_tgt_hw      : std_logic_vector(47 downto 0) := x"ab8967452301";
+    signal arp_tgt_hw      : std_logic_vector(47 downto 0) := x"ab8967452302";
     signal arp_tgt_ip      : std_logic_vector(31 downto 0) := x"0A00000A";
 
 begin
@@ -151,12 +151,12 @@ process(clk125MHz)
                     -- Ethernet Header 
                     -----------------------------
                     -- Destination MAC address
-                    when      8 => input_data <= arp_tgt_hw(47 downto 40);
-                    when      9 => input_data <= arp_tgt_hw(39 downto 32);
-                    when     10 => input_data <= arp_tgt_hw(31 downto 24);
-                    when     11 => input_data <= arp_tgt_hw(23 downto 16);
-                    when     12 => input_data <= arp_tgt_hw(15 downto  8);
-                    when     13 => input_data <= arp_tgt_hw( 7 downto  0);
+                    when      8 => input_data <= arp_tgt_hw( 7 downto  0);
+                    when      9 => input_data <= arp_tgt_hw(15 downto  8);
+                    when     10 => input_data <= arp_tgt_hw(23 downto 16);
+                    when     11 => input_data <= arp_tgt_hw(31 downto 24);
+                    when     12 => input_data <= arp_tgt_hw(39 downto 32);
+                    when     13 => input_data <= arp_tgt_hw(47 downto 40);
                    -- Source MAC address
                     when     14 => input_data <= arp_src_hw(47 downto 40);
                     when     15 => input_data <= arp_src_hw(39 downto 32);
@@ -180,8 +180,8 @@ process(clk125MHz)
                     when     29 => input_data <= x"00";
                     when     30 => input_data <= x"80";  -- TTL
                     when     31 => input_data <= x"01";  -- Protocol
-                    when     32 => input_data <= x"c9";  -- Checksum
-                    when     33 => input_data <= x"a1";
+                    when     32 => input_data <= x"b4";  -- Checksum
+                    when     33 => input_data <= x"fd";
                     when     34 => input_data <= x"0A";  -- Source IP Address
                     when     35 => input_data <= x"00";
                     when     36 => input_data <= x"00";
@@ -195,8 +195,8 @@ process(clk125MHz)
 					-------------------------------------
                     when     42 => input_data <= x"08";  -- ICMP Tyoe
                     when     43 => input_data <= x"00";  -- Code 
-                    when     44 => input_data <= x"47";  -- Checksum
-                    when     45 => input_data <= x"ee";   
+                    when     44 => input_data <= x"fd";  -- Checksum
+                    when     45 => input_data <= x"b1";   
                     when     46 => input_data <= x"00";  -- Identifier
                     when     47 => input_data <= x"01";
                     when     48 => input_data <= x"05";  -- Sequence
