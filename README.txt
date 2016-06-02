@@ -32,11 +32,9 @@ UDP Support
 
 ICMP Support
 ------------
-* ICMP 'echo request' is not validating the the IP checksum is correct
+* ICMP 'echo request' is not validating that the IP checksum is correct
 * ICMP 'echo request' is not validating that the ICMP length field is correct.
-* ICMP 'echo request' is not validating the ICMP checksums is correct
-* ICMP 'echo request' is being replied to, but this path is not yet using 
-  the outbound arbitor correctly
+* ICMP 'echo request' is not validating that the ICMP checksum is correct
 
 Outbound packets
 ----------------

@@ -145,6 +145,9 @@ architecture Behavioral of icmp_handler is
            icmp_sequence      : in  STD_LOGIC_VECTOR (15 downto 0));           
     end component;
 
+    signal reply_data_valid   : std_logic := '0';
+    signal reply_data         : std_logic_vector(7 DOWNTO 0) := (others => '0');
+
     component icmp_commit_buffer
     Port ( clk                : in  STD_LOGIC;
            data_valid_in      : in  STD_LOGIC;
@@ -155,6 +158,10 @@ architecture Behavioral of icmp_handler is
            packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
     end component;
 
+    signal i_packet_out_valid   : std_logic := '0';
+    signal i_packet_out_request : std_logic := '0';
+    signal i_packet_out_granted : std_logic := '0';
+    signal i_packet_out_data    : std_logic_vector(7 DOWNTO 0) := (others => '0');
     -------------------------------------------
     -- Debugging
     -------------------------------------------    
@@ -169,7 +176,6 @@ architecture Behavioral of icmp_handler is
         probe5 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
     );
     END COMPONENT ;
-    signal i_packet_out_valid : std_logic := '0';
 begin
 i_icmp_extracted_ethernet_header: icmp_extract_ethernet_header generic map (
     our_mac => our_mac)
@@ -220,6 +226,7 @@ i_icmp_extract_icmp_header : icmp_extract_icmp_header port map (
     icmp_identifier => icmp_identifier,
     icmp_sequence   => icmp_sequence);           
 
+
 --i_ila_0: ila_0 port map (
 --    clk       => clk,
 --    probe0(0) => packet_in_valid, 
@@ -229,7 +236,6 @@ i_icmp_extract_icmp_header : icmp_extract_icmp_header port map (
 --    probe4(0) => icmp_extracted_data_valid,
 --    probe5(0) => i_packet_out_valid);
 
-    packet_out_valid <= i_packet_out_valid;
 i_icmp_build_reply: icmp_build_reply generic map (
         our_mac => our_mac,
         our_ip  => our_ip)
@@ -238,8 +244,8 @@ i_icmp_build_reply: icmp_build_reply generic map (
     
         data_valid_in      => icmp_extracted_data_valid,
         data_in            => icmp_extracted_data,
-        data_valid_out     => i_packet_out_valid,
-        data_out           => packet_out_data,
+        data_valid_out     => reply_data_valid,
+        data_out           => reply_data,
     
         ether_is_ipv4      => ether_is_ipv4, 
         ether_src_mac      => ether_src_mac,
@@ -262,5 +268,18 @@ i_icmp_build_reply: icmp_build_reply generic map (
         icmp_identifier    => icmp_identifier,
         icmp_sequence      => icmp_sequence);
 
+i_icmp_commit_buffer: icmp_commit_buffer port map (
+        clk                => clk,
+        data_valid_in      => reply_data_valid,
+        data_in            => reply_data,
+        packet_out_request => i_packet_out_request,
+        packet_out_granted => i_packet_out_granted,
+        packet_out_valid   => i_packet_out_valid,         
+        packet_out_data    => i_packet_out_data);
+
+    packet_out_request   <= i_packet_out_request;
+    i_packet_out_granted <= packet_out_granted;
+    packet_out_valid     <= i_packet_out_valid;
+    packet_out_data      <= i_packet_out_data;
            
 end Behavioral;
