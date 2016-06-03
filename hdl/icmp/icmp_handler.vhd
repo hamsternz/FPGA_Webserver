@@ -173,7 +173,7 @@ architecture Behavioral of icmp_handler is
         probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
         probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
         probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-        probe5 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
+        probe5 : IN STD_LOGIC_VECTOR(7 DOWNTO 0)
     );
     END COMPONENT ;
 begin
@@ -227,14 +227,6 @@ i_icmp_extract_icmp_header : icmp_extract_icmp_header port map (
     icmp_sequence   => icmp_sequence);           
 
 
---i_ila_0: ila_0 port map (
---    clk       => clk,
---    probe0(0) => packet_in_valid, 
---    probe1    => packet_in_data,
---    probe2(0) => ether_extracted_data_valid, 
---    probe3(0) => ip_extracted_data_valid,
---    probe4(0) => icmp_extracted_data_valid,
---    probe5(0) => i_packet_out_valid);
 
 i_icmp_build_reply: icmp_build_reply generic map (
         our_mac => our_mac,
@@ -277,9 +269,20 @@ i_icmp_commit_buffer: icmp_commit_buffer port map (
         packet_out_valid   => i_packet_out_valid,         
         packet_out_data    => i_packet_out_data);
 
+
     packet_out_request   <= i_packet_out_request;
     i_packet_out_granted <= packet_out_granted;
     packet_out_valid     <= i_packet_out_valid;
     packet_out_data      <= i_packet_out_data;
+
+i_ila_0: ila_0 port map (
+    clk       => clk,
+    probe0(0) => reply_data_valid, 
+    probe1    => reply_data,
+    probe2(0) => i_packet_out_request, 
+    probe3(0) => i_packet_out_granted,
+    probe4(0) => i_packet_out_valid,
+    probe5    => i_packet_out_data);
+
            
 end Behavioral;

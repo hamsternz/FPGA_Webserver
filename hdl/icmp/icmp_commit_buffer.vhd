@@ -32,7 +32,9 @@ end icmp_commit_buffer;
 architecture Behavioral of icmp_commit_buffer is
     type a_data_buffer is array(0 to 2047) of std_logic_vector(8 downto 0);
     signal data_buffer : a_data_buffer := (others => (others => '0'));
-    
+    attribute rom_style : string;
+    attribute rom_style of data_buffer : signal is "block";
+        
     signal read_addr      : unsigned(10 downto 0) := (others => '0');
     signal write_addr     : unsigned(10 downto 0) := (others => '0');
     signal committed_addr : unsigned(10 downto 0) := (others => '0');
@@ -66,7 +68,11 @@ process(clk)
             ------------------------------------------------
             if write_state = write_writing or data_valid_in = '1' then 
                 data_buffer(to_integer(write_addr))(8)          <= data_valid_in;
-                data_buffer(to_integer(write_addr))(7 downto 0) <= data_in;
+                if data_valid_in = '1' then
+                    data_buffer(to_integer(write_addr))(7 downto 0) <= data_in;
+                else
+                    data_buffer(to_integer(write_addr))(7 downto 0) <= (others => '0');
+                end if;
             end if;
             
             case write_state is
@@ -107,11 +113,11 @@ process(clk)
             -------------------------------------------
             case read_state is
                 when read_reading =>
-                    i_packet_out_valid <= data_buffer(to_integer(read_addr))(8);
-                    i_packet_out_data  <= data_buffer(to_integer(read_addr))(7 downto 0);
                     if(i_packet_out_valid = '0') then
                         read_state <= read_waiting;                      
                     else
+                        i_packet_out_valid <= data_buffer(to_integer(read_addr))(8);
+                        i_packet_out_data  <= data_buffer(to_integer(read_addr))(7 downto 0);
                         read_addr <= read_addr + 1;
                     end if;
                     
@@ -131,6 +137,10 @@ process(clk)
                     end if;
                     
                 when others => --- For the read_idle state
+                    -- Start counting from 2, as this causes the 'request' line    
+                    -- to drop early enough to release the TX interface the   
+                    -- cycle that the last word of the interpacket gap is sent.
+                    read_pause <= (1 => '1', others => '0');
                     if read_addr = committed_addr then
                         -- Nothing to do
                         packet_out_request <= '0';    
