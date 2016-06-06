@@ -1,9 +1,9 @@
 ----------------------------------------------------------------------------------
 -- Engineer: Mike Field <hamster@snap.net.nz> 
 -- 
--- Module Name: icmp_commit_buffer - Behavioral
+-- Module Name: udp_commit_buffer - Behavioral
 --
--- Description: Somewhere to hold the data outbound ICMP packet while waiting to
+-- Description: Somewhere to hold the data outbound UDP packet while waiting to
 --              be granted access to the TX interface.
 --              If the buffer gets over-run with data (e.g. if the TX interface is 
 --              busy) then it drops the packet.  
@@ -19,7 +19,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity icmp_commit_buffer is
+entity udp_commit_buffer is
     Port ( clk                : in  STD_LOGIC;
        data_valid_in      : in  STD_LOGIC;
        data_in            : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -27,9 +27,9 @@ entity icmp_commit_buffer is
        packet_out_granted : in  std_logic;
        packet_out_valid   : out std_logic := '0';         
        packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
-end icmp_commit_buffer;
+end udp_commit_buffer;
 
-architecture Behavioral of icmp_commit_buffer is
+architecture Behavioral of udp_commit_buffer is
     type a_data_buffer is array(0 to 2047) of std_logic_vector(8 downto 0);
     signal data_buffer : a_data_buffer := (others => (others => '0'));
     attribute rom_style : string;

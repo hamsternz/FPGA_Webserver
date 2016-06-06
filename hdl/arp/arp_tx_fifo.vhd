@@ -33,8 +33,8 @@ entity arp_tx_fifo is
 end arp_tx_fifo;
 
 architecture Behavioral of arp_tx_fifo is
-   signal i_full  : std_logic;
-   signal i_empty : std_logic;
+   signal i_full  : std_logic := '0';
+   signal i_empty : std_logic := '0';
    
    type mem_array is array(31 downto 0) of std_logic_vector(80 downto 0);
    signal memory : mem_array;

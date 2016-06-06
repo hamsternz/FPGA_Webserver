@@ -1,14 +1,9 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
+-- Engineer: Mike Field <hamster@snap.net.nz> 
 -- 
--- Create Date: 21.05.2016 16:14:51
--- Design Name: 
 -- Module Name: main_design - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
+--
+-- Description: Top level of the IP processing design. 
 -- 
 -- Dependencies: 
 -- 
@@ -105,27 +100,38 @@ architecture Behavioral of main_design is
     component arp_handler is 
     generic (
         our_mac     : std_logic_vector(47 downto 0) := (others => '0');
-        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0');
+        our_netmask : std_logic_vector(31 downto 0) := (others => '0'));
     port (  clk                : in  STD_LOGIC;
-            packet_in_valid    : in  STD_LOGIC;
-            packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
-            -- For receiving data from the PHY        
-            packet_out_request : out std_logic := '0';
-            packet_out_granted : in  std_logic := '0';
-            packet_out_valid   : out std_logic;         
-            packet_out_data    : out std_logic_vector(7 downto 0);         
-             -- to enable IP->MAC lookup for outbound packets
-            lookup_request     : in  std_logic;
-            lookup_ip          : in  std_logic_vector(31 downto 0);
-            lookup_mac         : out std_logic_vector(47 downto 0);
-            lookup_found       : out std_logic;
-            lookup_reply       : out std_logic);
+        packet_in_valid    : in  STD_LOGIC;
+        packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
+        -- For receiving data from the PHY        
+        packet_out_request : out std_logic := '0';
+        packet_out_granted : in  std_logic := '0';
+        packet_out_valid   : out std_logic;         
+        packet_out_data    : out std_logic_vector(7 downto 0);         
+
+        -- For the wider design to send any ARP on the wire 
+        queue_request      : in  std_logic;
+        queue_request_ip   : in  std_logic_vector(31 downto 0);
+                 
+         -- to enable IP->MAC lookup for outbound packets
+        update_valid       : out std_logic;
+        update_ip          : out std_logic_vector(31 downto 0);
+        update_mac         : out std_logic_vector(47 downto 0));
     end component;
 
     signal packet_arp_request   : std_logic;
     signal packet_arp_granted   : std_logic;
     signal packet_arp_valid     : std_logic;         
     signal packet_arp_data      : std_logic_vector(7 downto 0);         
+
+    signal arp_queue_request    : std_logic := '0';
+    signal arp_queue_request_ip : std_logic_vector(31 downto 0) := (others => '0');
+
+    signal arp_update_valid     : std_logic := '0';
+    signal arp_update_ip        : std_logic_vector(31 downto 0) := (others => '0');
+    signal arp_update_mac       : std_logic_vector(47 downto 0) := (others => '0');
 
     component icmp_handler is 
     generic (
@@ -163,11 +169,12 @@ architecture Behavioral of main_design is
             udp_rx_dst_broadcast : out std_logic := '0';
             udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
 
-	    -- data to be sent over UDP
+    	    -- data to be sent over UDP
             udp_tx_busy          : out std_logic := '0';
             udp_tx_valid         : in  std_logic := '0';
             udp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
             udp_tx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+            udp_tx_dst_mac       : in  std_logic_vector(47 downto 0) := (others => '0');
             udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
             udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
 
@@ -181,6 +188,26 @@ architecture Behavioral of main_design is
     signal packet_udp_granted   : std_logic;
     signal packet_udp_valid     : std_logic;         
     signal packet_udp_data      : std_logic_vector(7 downto 0);         
+    signal udp_tx_busy          : std_logic;
+    signal udp_tx_valid         : std_logic;
+    signal udp_tx_data          : std_logic_vector(7 downto 0);
+    signal udp_tx_src_port      : std_logic_vector(15 downto 0);
+    signal udp_tx_dst_mac       : std_logic_vector(47 downto 0);
+    signal udp_tx_dst_ip        : std_logic_vector(31 downto 0);
+    signal udp_tx_dst_port      : std_logic_vector(15 downto 0);
+
+    component udp_test_source is
+    Port ( 
+        clk                  : in STD_LOGIC;
+	    -- data to be sent over UDP
+        udp_tx_busy          : in  std_logic := '0';
+        udp_tx_valid         : out std_logic := '0';
+        udp_tx_data          : out std_logic_vector(7 downto 0)  := (others => '0');
+        udp_tx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+        udp_tx_dst_mac       : out std_logic_vector(47 downto 0) := (others => '0');
+        udp_tx_dst_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+        udp_tx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0'));
+    end component;
 
     -------------------------------------------
     -- TX Interface
@@ -284,8 +311,9 @@ i_defragment_and_check_crc: defragment_and_check_crc port map (
     packet_data        => packet_data);
 
 i_arp_handler:arp_handler  generic map (
-        our_mac => our_mac,
-        our_ip  => our_ip)
+        our_mac     => our_mac,
+        our_netmask => our_netmask,
+        our_ip      => our_ip)
     port map (
         clk              => clk125MHz,
         packet_in_valid  => packet_data_valid,
@@ -294,13 +322,16 @@ i_arp_handler:arp_handler  generic map (
         packet_out_request => packet_arp_request,
         packet_out_granted => packet_arp_granted,
         packet_out_valid   => packet_arp_valid,          
-        packet_out_data    => packet_arp_data,         
-         -- to enable IP->MAC lookup for outbound packets
-        lookup_request   => '0',
-        lookup_ip        => (others => '0'),
-        lookup_mac       => open,
-        lookup_found     => open,
-        lookup_reply     => open);
+        packet_out_data    => packet_arp_data,    
+             
+        -- to enable the wider design to send ARP requests 
+        queue_request      => arp_queue_request,
+        queue_request_ip   => arp_queue_request_ip,
+        
+        -- to enable IP->MAC lookup for outbound packets
+        update_valid      => arp_update_valid,
+        update_ip         => arp_update_ip,
+        update_mac        => arp_update_mac);
 
 i_icmp_handler: icmp_handler  generic map (
                 our_mac => our_mac,
@@ -314,6 +345,16 @@ i_icmp_handler: icmp_handler  generic map (
                 packet_out_granted => packet_icmp_granted,
                 packet_out_valid   => packet_icmp_valid,          
                 packet_out_data    => packet_icmp_data);
+
+i_udp_test_source: udp_test_source port map (
+        clk => clk125MHz,
+        udp_tx_busy          => udp_tx_busy,
+        udp_tx_valid         => udp_tx_valid,
+        udp_tx_data          => udp_tx_data,
+        udp_tx_src_port      => udp_tx_src_port,
+        udp_tx_dst_mac       => udp_tx_dst_mac,
+        udp_tx_dst_ip        => udp_tx_dst_ip,
+        udp_tx_dst_port      => udp_tx_dst_port);
 
 i_udp_handler: udp_handler 
     generic map (
@@ -336,12 +377,13 @@ i_udp_handler: udp_handler
         udp_rx_dst_port      => udp_rx_dst_port,
 
 	    -- data to be sent over UDP
-        udp_tx_busy          => open,
-        udp_tx_valid         => '0',
-        udp_tx_data          => (others => '0'),
-        udp_tx_src_port      => (others => '0'),
-        udp_tx_dst_ip        => (others => '0'),
-        udp_tx_dst_port      => (others => '0'),
+        udp_tx_busy          => udp_tx_busy,
+        udp_tx_valid         => udp_tx_valid,
+        udp_tx_data          => udp_tx_data,
+        udp_tx_src_port      => udp_tx_src_port,
+        udp_tx_dst_mac       => udp_tx_dst_mac,
+        udp_tx_dst_ip        => udp_tx_dst_ip,
+        udp_tx_dst_port      => udp_tx_dst_port,
 
         -- For sending data to the PHY        
         packet_out_request => packet_udp_request, 

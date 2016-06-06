@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- Engineer: Mike Field <hamster@snap.net.nz> 
 -- 
--- Module Name: udp_strip_ethernet_header - Behavioral
+-- Module Name: udp_extract_ethernet_header - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 

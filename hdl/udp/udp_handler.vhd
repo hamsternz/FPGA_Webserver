@@ -29,10 +29,11 @@ entity udp_handler is
             udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
 
 	    -- data to be sent over UDP
-            udp_tx_busy          : out std_logic := '0';
+            udp_tx_busy          : out std_logic := '1';
             udp_tx_valid         : in  std_logic := '0';
             udp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
             udp_tx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+            udp_tx_dst_mac       : in  std_logic_vector(47 downto 0) := (others => '0');
             udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
             udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
 
@@ -47,6 +48,7 @@ architecture Behavioral of udp_handler is
 
     component udp_extract_ethernet_header
     generic (
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0');
         our_mac     : std_logic_vector(47 downto 0) := (others => '0'));
     Port ( clk            : in  STD_LOGIC;
            data_valid_in  : in  STD_LOGIC;
@@ -122,15 +124,24 @@ architecture Behavioral of udp_handler is
     signal udp_dst_port  : STD_LOGIC_VECTOR (15 downto 0);           
     signal udp_length    : STD_LOGIC_VECTOR (15 downto 0);           
 
-    component udp_commit_buffer
-    Port ( clk                : in  STD_LOGIC;
-           data_valid_in      : in  STD_LOGIC;
-           data_in            : in  STD_LOGIC_VECTOR (7 downto 0);
-           packet_out_request : out std_logic := '0';
-           packet_out_granted : in  std_logic := '0';
-           packet_out_valid   : out std_logic := '0';         
-           packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
-    end component;
+    component udp_tx_packet is
+    generic (
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0');
+        our_mac     : std_logic_vector(47 downto 0) := (others => '0'));
+    port(  clk                   : in  STD_LOGIC;
+        udp_tx_busy          : out std_logic := '1';
+        udp_tx_valid         : in  std_logic := '0';
+        udp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+        udp_tx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+        udp_tx_dst_mac       : in  std_logic_vector(47 downto 0) := (others => '0');
+        udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
+        udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+
+        packet_out_request : out std_logic := '0';
+        packet_out_granted : in  std_logic := '0';
+        packet_out_valid   : out std_logic := '0';         
+        packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
+end component;
 
     -------------------------------------------
     -- Debugging
@@ -149,7 +160,7 @@ architecture Behavioral of udp_handler is
     signal i_packet_out_valid : std_logic := '0';
 begin
     --==============================================
-    -- Start of input processing
+    -- Start of UDP RX processing
     --==============================================
 i_udp_extracted_ethernet_header: udp_extract_ethernet_header generic map (
         our_mac => our_mac)
@@ -213,7 +224,30 @@ i_udp_extract_udp_header : udp_extract_udp_header port map (
     udp_rx_dst_port      <= udp_dst_port;
 
     --==============================================
-    -- End of input processing
+    -- End of UDP RX processing
+    --==============================================
+    -- Start of UDP TX processing
+    --==============================================
+i_udp_tx_packet : udp_tx_packet generic map (
+        our_ip  => our_ip,
+        our_mac => our_mac
+    ) port map (    
+        clk                  => clk,
+    
+        udp_tx_busy          => udp_tx_busy,
+        udp_tx_valid         => udp_tx_valid,
+        udp_tx_data          => udp_tx_data,
+        udp_tx_src_port      => udp_tx_src_port,
+        udp_tx_dst_mac       => udp_tx_dst_mac,
+        udp_tx_dst_ip        => udp_tx_dst_ip,
+        udp_tx_dst_port      => udp_tx_dst_port,
+    
+        packet_out_request   => packet_out_request, 
+        packet_out_granted   => packet_out_granted,
+        packet_out_valid     => packet_out_valid,         
+        packet_out_data      => packet_out_data);
+    --==============================================
+    -- End of UDP TX processing
     --==============================================
 
 --i_ila_0: ila_0 port map (

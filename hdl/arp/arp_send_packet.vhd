@@ -107,26 +107,50 @@ generate_data: process (clk)
 						   else
 			                   packet_data <= x"02"; -- reply
 						   end if;
-				-- Target MAC 
-                when 23 => packet_data <= arp_src_hw( 7 downto  0);
-                when 24 => packet_data <= arp_src_hw(15 downto  8);
-                when 25 => packet_data <= arp_src_hw(23 downto 16);
-                when 26 => packet_data <= arp_src_hw(31 downto 24);
-				when 27 => packet_data <= arp_src_hw(39 downto 32);
-				when 28 => packet_data <= arp_src_hw(47 downto 40);
-				-- Target IP
+				-- Source MAC
+                when 23 => if arp_op_request = '1' then
+                               packet_data <= x"FF";  
+                           else
+                               packet_data <= arp_src_hw( 7 downto  0);
+                           end if;
+                when 24 => if arp_op_request = '1' then
+                                  packet_data <= x"FF";  
+                              else
+                                  packet_data <= arp_src_hw(15 downto  8);
+                           end if;
+                when 25 => if arp_op_request = '1' then
+                              packet_data <= x"FF";  
+                           else
+                              packet_data <= arp_src_hw(23 downto 16);
+                           end if;
+                when 26 => if arp_op_request = '1' then
+                               packet_data <= x"FF";  
+                           else
+                               packet_data <= arp_src_hw(31 downto 24);
+                           end if;
+                when 27 => if arp_op_request = '1' then
+                             packet_data <= x"FF";  
+                           else
+                               packet_data <= arp_src_hw(39 downto 32);
+                           end if;
+				when 28 => if arp_op_request = '1' then
+                               packet_data <= x"FF";  
+                           else
+                               packet_data <= arp_src_hw(47 downto 40);
+                           end if;
+				-- Source IP
 				when 29 => packet_data <= arp_src_ip( 7 downto  0);
 				when 30 => packet_data <= arp_src_ip(15 downto  8);
 				when 31 => packet_data <= arp_src_ip(23 downto 16);
 				when 32 => packet_data <= arp_src_ip(31 downto 24);
-				-- Source MAC
+				-- Target MAC 
 				when 33 => packet_data <= arp_tgt_hw( 7 downto  0);
 				when 34 => packet_data <= arp_tgt_hw(15 downto  8);
 				when 35 => packet_data <= arp_tgt_hw(23 downto 16);
 				when 36 => packet_data <= arp_tgt_hw(31 downto 24);
 				when 37 => packet_data <= arp_tgt_hw(39 downto 32);
 				when 38 => packet_data <= arp_tgt_hw(47 downto 40);
-				-- Source IP
+				-- Target IP
 				when 39 => packet_data <= arp_tgt_ip( 7 downto  0);
 				when 40 => packet_data <= arp_tgt_ip(15 downto  8);
 				when 41 => packet_data <= arp_tgt_ip(23 downto 16);

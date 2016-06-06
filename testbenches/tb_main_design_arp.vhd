@@ -47,6 +47,10 @@ architecture Behavioral of tb_main_design_arp is
     signal input_data_error   : STD_LOGIC := '0';
 
     component main_design is
+    generic (
+        our_mac       : std_logic_vector(47 downto 0) := (others => '0');
+        our_netmask   : std_logic_vector(31 downto 0) := (others => '0');
+        our_ip        : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( 
        clk125Mhz          : in  STD_LOGIC;
        clk125Mhz90        : in  STD_LOGIC;
@@ -76,6 +80,10 @@ architecture Behavioral of tb_main_design_arp is
     signal arp_tgt_hw      : std_logic_vector(47 downto 0) := x"000000000000";
     signal arp_tgt_ip      : std_logic_vector(31 downto 0) := x"0A00000A";
 
+    constant our_mac     : std_logic_vector(47 downto 0) := x"AB_89_67_45_23_02"; -- NOTE this is 02:23:45:67:89:AB
+    constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";
+    constant our_netmask : std_logic_vector(31 downto 0) := x"00_FF_FF_FF";
+
 begin
 
 process
@@ -90,7 +98,11 @@ process
         wait for 2 ns;
     end process;
 
-i_main_design: main_design port map (
+i_main_design: main_design generic map (
+        our_mac     => our_mac, 
+        our_netmask => our_netmask,
+        our_ip      => our_ip
+   ) port map (
        clk125Mhz          => clk125Mhz,
        clk125Mhz90        => clk125Mhz90,
        

@@ -129,6 +129,7 @@ architecture Behavioral of tx_interface is
            data_valid  : in STD_LOGIC;
            data        : in STD_LOGIC_VECTOR (7 downto 0);
            data_error  : in STD_LOGIC;
+           data_enable : in STD_LOGIC := '1';
            
            eth_txck    : out STD_LOGIC;
            eth_txctl   : out STD_LOGIC;
@@ -201,6 +202,7 @@ i_tx_rgmii: tx_rgmii port map (
     data_valid  => framed_data_valid,
     data        => framed_data,
     data_error  => '0',
+    data_enable => '1',
 
     eth_txck  => eth_txck,
     eth_txctl => eth_txctl,

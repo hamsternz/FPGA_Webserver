@@ -26,12 +26,12 @@ entity rx_arp is
            packet_data       : in  STD_LOGIC_VECTOR (7 downto 0);
            packet_data_valid : in  STD_LOGIC;
            
-           arp_de         : out STD_LOGIC;
-           arp_op_request : out STD_LOGIC;
-           arp_sender_hw  : out STD_LOGIC_VECTOR(47 downto 0);
-           arp_sender_ip  : out STD_LOGIC_VECTOR(31 downto 0);
-           arp_target_hw  : out STD_LOGIC_VECTOR(47 downto 0);
-           arp_target_ip  : out STD_LOGIC_VECTOR(31 downto 0));
+           arp_de         : out STD_LOGIC := '0';
+           arp_op_request : out STD_LOGIC := '0';
+           arp_sender_hw  : out STD_LOGIC_VECTOR(47 downto 0) := (others => '0');
+           arp_sender_ip  : out STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+           arp_target_hw  : out STD_LOGIC_VECTOR(47 downto 0) := (others => '0');
+           arp_target_ip  : out STD_LOGIC_VECTOR(31 downto 0) := (others => '0'));
 end rx_arp;
 
 architecture Behavioral of rx_arp is

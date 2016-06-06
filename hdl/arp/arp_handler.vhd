@@ -79,7 +79,8 @@ use IEEE.NUMERIC_STD.ALL;
 entity arp_handler is 
     generic (
         our_mac     : std_logic_vector(47 downto 0) := (others => '0');
-        our_ip      : std_logic_vector(31 downto 0) := (others => '0'));
+        our_ip      : std_logic_vector(31 downto 0) := (others => '0');
+        our_netmask : std_logic_vector(31 downto 0) := (others => '0'));
     port (  clk                : in  STD_LOGIC;
             packet_in_valid    : in  STD_LOGIC;
             packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -87,21 +88,19 @@ entity arp_handler is
             packet_out_request : out std_logic := '0';
             packet_out_granted : in  std_logic := '0';
             packet_out_valid   : out std_logic;         
-            packet_out_data    : out std_logic_vector(7 downto 0);         
+            packet_out_data    : out std_logic_vector(7 downto 0);
+            
+            -- For the wider design to send any ARP on the wire 
+		    queue_request    : in  std_logic;
+            queue_request_ip : in  std_logic_vector(31 downto 0);
+                     
              -- to enable IP->MAC lookup for outbound packets
-            lookup_request     : in  std_logic;
-            lookup_ip          : in  std_logic_vector(31 downto 0);
-            lookup_mac         : out std_logic_vector(47 downto 0);
-            lookup_found       : out std_logic;
-            lookup_reply       : out std_logic);
+            update_valid       : out std_logic := '0';
+            update_ip          : out std_logic_vector(31 downto 0) := (others => '0');
+            update_mac         : out std_logic_vector(47 downto 0) := (others => '0'));
 end arp_handler;
 
 architecture Behavioral of arp_handler is
-    type t_arp_table is array(0 to 255) of std_logic_vector(47 downto 0);
-    type t_arp_valid is array(0 to 255) of std_logic;
-    signal arp_table : t_arp_table := (255 => (others => '1'), others => (others => '0'));
-    signal arp_valid : t_arp_valid := (255 => '1', others => '0');
-
     component rx_arp is
     Port ( clk               : in  STD_LOGIC;
            packet_data_valid : in  STD_LOGIC;
@@ -123,13 +122,13 @@ architecture Behavioral of arp_handler is
     signal arp_tx_tgt_hw   : std_logic_vector(47 downto 0) := (others => '0');
     signal arp_tx_tgt_ip   : std_logic_vector(31 downto 0) := our_ip;
 
-    signal arp_in_write       : STD_LOGIC;
-    signal arp_in_full        : STD_LOGIC;
-    signal arp_in_op_request  : STD_LOGIC;
-    signal arp_in_src_hw      : STD_LOGIC_VECTOR(47 downto 0);
-    signal arp_in_src_ip      : STD_LOGIC_VECTOR(31 downto 0);
-    signal arp_in_tgt_hw      : STD_LOGIC_VECTOR(47 downto 0);
-    signal arp_in_tgt_ip      : STD_LOGIC_VECTOR(31 downto 0);
+    signal arp_in_write       : STD_LOGIC := '0';
+    signal arp_in_full        : STD_LOGIC := '0';
+    signal arp_in_op_request  : STD_LOGIC := '0';
+    signal arp_in_src_hw      : STD_LOGIC_VECTOR(47 downto 0) := (others => '0');
+    signal arp_in_src_ip      : STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
+    signal arp_in_tgt_hw      : STD_LOGIC_VECTOR(47 downto 0) := (others => '0');
+    signal arp_in_tgt_ip      : STD_LOGIC_VECTOR(31 downto 0) := (others => '0');
 
     component arp_tx_fifo
         Port ( clk                : in  STD_LOGIC;
@@ -172,7 +171,9 @@ architecture Behavioral of arp_handler is
         packet_data   : out std_logic_vector(7 downto 0));
     end component;
 
-
+    signal hold_request    : std_logic := '0';
+    signal hold_request_ip : std_logic_vector(31 downto 0) := (others => '0');
+    
 begin
 
 i_rx_arp: rx_arp Port map ( 
@@ -192,40 +193,46 @@ i_rx_arp: rx_arp Port map (
 process(clk) 
     begin
         if rising_edge(clk) then
-            ------------------------------------------------------------
-            -- Process any MAC lookups
-            ------------------------------------------------------------
-            if lookup_request = '1' then
-                if lookup_ip(23 downto 0) = our_ip(23 downto 0) then
-                    lookup_mac   <= arp_table(to_integer(unsigned(lookup_ip(31 downto 24))));
-                    lookup_found <= arp_valid(to_integer(unsigned(lookup_ip(31 downto 24))));
-                    lookup_reply <= '1';
-                else
-                    lookup_found <= '0';
-                    lookup_reply <= '1';
+            if arp_in_write = '0' or ((arp_in_src_ip and our_netmask) /= (our_ip and our_netmask))then
+                -- If there is no write , or it is not for our IP subnet then ignore it
+                -- and queue any request for a new ARP broadcast
+                update_valid <= '0';
+                arp_tx_write <= '0';
+                if queue_request = '1' then
+                    arp_tx_write      <= '1';
+                    arp_tx_op_request <= '1';
+                    arp_tx_src_hw     <= our_mac;
+                    arp_tx_src_ip     <= our_ip;                                         
+                    arp_tx_tgt_hw     <= (others => '0');
+                    arp_tx_tgt_ip     <= queue_request_ip;
+                elsif hold_request = '1' then
+                    -- if a request was delayed, then write it. 
+                    arp_tx_write      <= '1';
+                    arp_tx_op_request <= '1';
+                    arp_tx_src_hw     <= our_mac;
+                    arp_tx_src_ip     <= our_ip;                                         
+                    arp_tx_tgt_hw     <= (others => '0');
+                    arp_tx_tgt_ip     <= hold_request_ip;
+                    hold_request      <= '0';
                 end if;
             else
-                lookup_reply <= '0';
-            end if;
-        
-            ------------------------------------------------------------
-            -- Process any requests or replys
-            ------------------------------------------------------------
-            if arp_in_write = '0' then
-                arp_tx_write           <= '0';
-            elsif arp_in_src_ip(23 downto 0) /= our_ip(23 downto 0) or arp_in_src_ip(31 downto 24) = x"FF" then
-                arp_tx_write           <= '0';
-            else
-                arp_table(to_integer(unsigned(arp_in_src_ip(31 downto 24)))) <= arp_in_src_hw;
-                arp_valid(to_integer(unsigned(arp_in_src_ip(31 downto 24)))) <= '1';
+                -- It is a write for our subnet, so update the ARP resolver table.
+                update_valid <= '1';
+                update_ip    <= arp_in_src_ip;
+                update_mac   <= arp_in_src_hw;
                 if arp_in_op_request = '1' and arp_in_tgt_ip = our_ip and arp_tx_full = '0' then
-                    -- Queue any outbound replys
+                    -- And if it is a request for our MAC, then send it
+                    -- by queuing the outbound reply
                     arp_tx_write      <= '1';
                     arp_tx_op_request <= '0';
                     arp_tx_src_hw     <= our_mac;
                     arp_tx_src_ip     <= our_ip;                                         
                     arp_tx_tgt_hw     <= arp_in_src_hw;
-                    arp_tx_tgt_ip     <= arp_in_src_ip;                   
+                    arp_tx_tgt_ip     <= arp_in_src_ip;
+                    -- If the request to send an ARP packet gets gazumped by a request
+                    -- from the wire, then hold onto it to and send it next.
+                    hold_request      <= queue_request;
+                    hold_request_ip   <= queue_request_ip;
                 end if; 
             end if;
         end if;
