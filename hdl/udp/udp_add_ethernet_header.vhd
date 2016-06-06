@@ -33,7 +33,7 @@ entity udp_add_ethernet_header is
 end udp_add_ethernet_header;
 
 architecture Behavioral of udp_add_ethernet_header is
-    type a_data_delay is array(0 to 13) of std_logic_vector(8 downto 0);
+    type a_data_delay is array(0 to 14) of std_logic_vector(8 downto 0);
     signal data_delay      : a_data_delay := (others => (others => '0'));
     -------------------------------------------------------
     -- Note: Set the initial state to pass the data through

@@ -48,7 +48,6 @@ architecture Behavioral of udp_handler is
 
     component udp_extract_ethernet_header
     generic (
-        our_ip      : std_logic_vector(31 downto 0) := (others => '0');
         our_mac     : std_logic_vector(47 downto 0) := (others => '0'));
     Port ( clk            : in  STD_LOGIC;
            data_valid_in  : in  STD_LOGIC;

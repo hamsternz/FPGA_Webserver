@@ -33,7 +33,7 @@ entity udp_add_ip_header is
 end udp_add_ip_header;
 
 architecture Behavioral of udp_add_ip_header is
-    type a_data_delay is array(0 to 13) of std_logic_vector(8 downto 0);
+    type a_data_delay is array(0 to 20) of std_logic_vector(8 downto 0);
     signal data_delay      : a_data_delay := (others => (others => '0'));
     -------------------------------------------------------
     -- Note: Set the initial state to pass the data through
@@ -84,12 +84,12 @@ process(clk)
                 data_delay(data_delay'high) <= '1' & data_in;
                 if data_valid_in_last = '0' then
                     count <= (others => '0');
-                elsif count /= "10011" then
+                elsif count /= "11111" then
                     count <= count + 1;
                 end if;
             else
                 data_delay(data_delay'high) <= (others => '0');
-                if count /= "10011" then
+                if count /= "11111" then
                     count <= count + 1;
                 end if;
             end if;     

@@ -20,7 +20,7 @@ entity udp_tx_packet is
         our_ip      : std_logic_vector(31 downto 0) := (others => '0');
         our_mac     : std_logic_vector(47 downto 0) := (others => '0'));
     port(  clk               : in  STD_LOGIC;
-        udp_tx_busy          : out std_logic := '1';
+        udp_tx_busy          : out std_logic := '0';
         udp_tx_valid         : in  std_logic;
         udp_tx_data          : in  std_logic_vector(7 downto 0);
         udp_tx_src_port      : in  std_logic_vector(15 downto 0);
@@ -103,7 +103,9 @@ architecture Behavioral of udp_tx_packet is
     end component;
 
 begin
-
+    pre_udp_valid <= udp_tx_valid;
+    pre_udp_data  <= udp_tx_data;
+    
 i_udp_add_udp_header: udp_add_udp_header port map (
     clk            => clk,
     data_valid_in  => pre_udp_valid,
