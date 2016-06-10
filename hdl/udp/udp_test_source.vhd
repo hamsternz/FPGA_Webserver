@@ -57,8 +57,8 @@ process(clk)
                 when waiting =>
                     udp_tx_valid <= '0';
                     if countdown = 0 then
---                        countdown <= to_unsigned(12_499_999,24);
-                        countdown <= to_unsigned(199,24);
+                        countdown <= to_unsigned(1_249_999,24);
+--                        countdown <= to_unsigned(199,24);
                         state <= armed;
                     else   
                         countdown <= countdown-1;

@@ -27,21 +27,35 @@ entity udp_add_udp_header is
            data_valid_out : out STD_LOGIC := '0';
            data_out       : out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
          
-           udp_src_port : in  std_logic_vector(15 downto 0);
-           udp_dst_port : in  std_logic_vector(15 downto 0);
-           udp_length   : in  std_logic_vector(15 downto 0);
-           udp_checksum : in  std_logic_vector(15 downto 0));
+           udp_src_port  : in  std_logic_vector(15 downto 0);
+           udp_dst_port  : in  std_logic_vector(15 downto 0);
+           data_length   : in  std_logic_vector(15 downto 0);
+           data_checksum : in  std_logic_vector(15 downto 0));
 end udp_add_udp_header;
 
 architecture Behavioral of udp_add_udp_header is
     type a_data_delay is array(0 to 8) of std_logic_vector(8 downto 0);
     signal data_delay      : a_data_delay := (others => (others => '0'));
-    -------------------------------------------------------
-    -- Note: Set the initial state to pass the data through
-    -------------------------------------------------------
+    
+    ----------------------------------------------------------------
+    -- Note: Set the initial state to pass the data striaght through
+    ----------------------------------------------------------------
     signal count              : unsigned(3 downto 0) := (others => '1');
     signal data_valid_in_last : std_logic            := '0';
+
+    signal udp_length         : std_logic_vector(15 downto 0);
+    signal udp_checksum_u1    : unsigned(19 downto 0);
+    signal udp_checksum_u2    : unsigned(16 downto 0);
+    signal udp_checksum_u3    : unsigned(15 downto 0);
+    signal udp_checksum       : std_logic_vector(15 downto 0);
 begin
+    -- NEED TO CORRECT THIS! ---
+    udp_length      <= std_logic_vector(unsigned(data_length)+8);
+    udp_checksum_u1 <= to_unsigned(0,20) + unsigned(data_checksum) + unsigned(udp_length) 
+                                         + unsigned(udp_src_port)  + unsigned(udp_dst_port);
+    udp_checksum_u2 <= to_unsigned(0,17) + udp_checksum_u1(15 downto 0) + udp_checksum_u1(19 downto 16);
+    udp_checksum_u3 <= udp_checksum_u2(15 downto 0) + udp_checksum_u2(16 downto 16);
+    udp_checksum    <= not std_logic_vector(udp_checksum_u3);
 process(clk)
     begin
         if rising_edge(clk) then

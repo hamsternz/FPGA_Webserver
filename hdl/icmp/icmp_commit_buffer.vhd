@@ -59,6 +59,7 @@ begin
     packet_out_data  <= i_packet_out_data;
 
 process(clk) 
+    variable write_data : std_logic_vector(8 downto 0);    
     begin
         if rising_edge(clk) then
             -------------------------------------------------
@@ -67,12 +68,11 @@ process(clk)
             -- committed_addr will not be updated).
             ------------------------------------------------
             if write_state = write_writing or data_valid_in = '1' then 
-                data_buffer(to_integer(write_addr))(8)          <= data_valid_in;
+                write_data := (others => '0');
                 if data_valid_in = '1' then
-                    data_buffer(to_integer(write_addr))(7 downto 0) <= data_in;
-                else
-                    data_buffer(to_integer(write_addr))(7 downto 0) <= (others => '0');
+                    write_data := data_valid_in & data_in;
                 end if;
+                data_buffer(to_integer(write_addr)) <= write_data;
             end if;
             
             case write_state is

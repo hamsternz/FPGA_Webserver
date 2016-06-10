@@ -58,8 +58,8 @@ process(clk)
                 when "1001" => data_out <= ether_src_mac(31 downto 24); data_valid_out <= '1';
                 when "1010" => data_out <= ether_src_mac(39 downto 32); data_valid_out <= '1';
                 when "1011" => data_out <= ether_src_mac(47 downto 40); data_valid_out <= '1';
-                when "1100" => data_out <= ether_type( 7 downto 0);     data_valid_out <= '1';
-                when "1101" => data_out <= ether_type(15 downto 8);     data_valid_out <= '1';
+                when "1100" => data_out <= ether_type(15 downto 8);     data_valid_out <= '1';
+                when "1101" => data_out <= ether_type( 7 downto 0);     data_valid_out <= '1';
                 when others => data_out <= data_delay(0)(7 downto 0);   data_valid_out <= data_delay(0)(8);
             end case;
 
