@@ -32,8 +32,8 @@ end udp_commit_buffer;
 architecture Behavioral of udp_commit_buffer is
     type a_data_buffer is array(0 to 2047) of std_logic_vector(8 downto 0);
     signal data_buffer : a_data_buffer := (others => (others => '0'));
-    attribute rom_style : string;
-    attribute rom_style of data_buffer : signal is "block";
+    attribute ram_style : string;
+    attribute ram_style of data_buffer : signal is "block";
         
     signal read_addr      : unsigned(10 downto 0) := (others => '0');
     signal write_addr     : unsigned(10 downto 0) := (others => '0');

@@ -40,8 +40,8 @@ architecture Behavioral of udp_tx_buffer_count_checksum_data is
     signal read_ptr           : unsigned(10 downto 0) := (others => '1');
     signal checkpoint         : unsigned(10 downto 0) := (others => '1');
     signal data_buffer        : a_data_buffer := (others =>( others => '0'));
-    attribute rom_style : string;
-    attribute rom_style of data_buffer : signal is "block";
+    attribute ram_style : string;
+    attribute ram_style of data_buffer : signal is "block";
 
     signal data_count         : unsigned(10 downto 0) := (others => '0');
     signal data_valid_in_last : std_logic := '0';
@@ -64,9 +64,9 @@ process(clk)
                 data_count <= data_count + 1;
                 --- Update the checksum here
                 if data_count(0) = '0' then
-                    checksum <= to_unsigned(0,17) + checksum(15 downto 0) + checksum(16 downto 16) + unsigned(data_in); 
-                else
                     checksum <= to_unsigned(0,17) + checksum(15 downto 0) + checksum(16 downto 16) + (unsigned(data_in) & to_unsigned(0,8));
+                else
+                    checksum <= to_unsigned(0,17) + checksum(15 downto 0) + checksum(16 downto 16) + unsigned(data_in); 
                 end if;
             else
                 if data_valid_in_last = '1' then
@@ -77,7 +77,7 @@ process(clk)
                     checkpoint    <= write_ptr;
                 end if;
                 data_count <= (others => '0');
-                checksum   <= (others => '1');
+                checksum   <= (others => '0');
             end if;
             data_valid_in_last <= data_valid_in;
             

@@ -68,6 +68,9 @@ architecture Behavioral of udp_tx_packet is
            data_valid_out  : out STD_LOGIC := '0';
            data_out        : out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
 
+           ip_src_ip       : in  STD_LOGIC_VECTOR (31 downto 0);
+           ip_dst_ip       : in  STD_LOGIC_VECTOR (31 downto 0);           
+
            data_length     : in  std_logic_vector(15 downto 0);
            data_checksum   : in  std_logic_vector(15 downto 0);
            udp_src_port    : in  std_logic_vector(15 downto 0);
@@ -88,9 +91,8 @@ architecture Behavioral of udp_tx_packet is
            data_out           : out STD_LOGIC_VECTOR (7 downto 0)  := (others => '0');
 
            udp_data_length    : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
-           ip_checksum        : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
            ip_src_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
-           ip_dest_ip         : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
+           ip_dst_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
     end component;
 
     signal pre_header_valid  : STD_LOGIC := '0';
@@ -154,6 +156,9 @@ i_udp_add_udp_header: udp_add_udp_header port map (
     data_valid_out  => pre_ip_valid,
     data_out        => pre_ip_data,
 
+    ip_src_ip       => our_ip,
+    ip_dst_ip      => tx_dst_ip,           
+
     data_length     => data_length,
     data_checksum   => data_checksum,
     udp_src_port    => tx_src_port,
@@ -167,9 +172,8 @@ i_udp_add_ip_header: udp_add_ip_header port map (
         data_out        => pre_header_data,
     
         udp_data_length => data_length,
-        ip_checksum     => data_checksum,
         ip_src_ip       => our_ip,
-        ip_dest_ip      => tx_dst_ip);           
+        ip_dst_ip      => tx_dst_ip);           
 
 i_udp_add_ethernet_header: udp_add_ethernet_header port map (
     clk            => clk,

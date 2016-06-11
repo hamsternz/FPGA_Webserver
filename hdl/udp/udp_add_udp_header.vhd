@@ -26,6 +26,9 @@ entity udp_add_udp_header is
            data_in        : in  STD_LOGIC_VECTOR (7 downto 0);
            data_valid_out : out STD_LOGIC := '0';
            data_out       : out STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
+
+           ip_src_ip     : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
+           ip_dst_ip     : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');           
          
            udp_src_port  : in  std_logic_vector(15 downto 0);
            udp_dst_port  : in  std_logic_vector(15 downto 0);
@@ -44,18 +47,40 @@ architecture Behavioral of udp_add_udp_header is
     signal data_valid_in_last : std_logic            := '0';
 
     signal udp_length         : std_logic_vector(15 downto 0);
-    signal udp_checksum_u1    : unsigned(19 downto 0);
+    signal udp_checksum_u1a   : unsigned(19 downto 0);
+    signal udp_checksum_u1b   : unsigned(19 downto 0);
     signal udp_checksum_u2    : unsigned(16 downto 0);
     signal udp_checksum_u3    : unsigned(15 downto 0);
     signal udp_checksum       : std_logic_vector(15 downto 0);
+    
+    --------------------------------------------------------------------
+    -- UDP checksum is calculated based on a pseudo header that includes
+    -- the source and destination IP addresses
+    --------------------------------------------------------------------
+    signal pseudohdr_0        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_1        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_2        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_3        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_4        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_5        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_6        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_7        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_8        : std_logic_vector(15 downto 0) := (others => '0');
+    signal pseudohdr_9        : std_logic_vector(15 downto 0) := (others => '0');
 begin
-    -- NEED TO CORRECT THIS! ---
     udp_length      <= std_logic_vector(unsigned(data_length)+8);
-    udp_checksum_u1 <= to_unsigned(0,20) + unsigned(data_checksum) + unsigned(udp_length) 
-                                         + unsigned(udp_src_port)  + unsigned(udp_dst_port);
-    udp_checksum_u2 <= to_unsigned(0,17) + udp_checksum_u1(15 downto 0) + udp_checksum_u1(19 downto 16);
-    udp_checksum_u3 <= udp_checksum_u2(15 downto 0) + udp_checksum_u2(16 downto 16);
-    udp_checksum    <= not std_logic_vector(udp_checksum_u3);
+
+    pseudohdr_0 <= ip_src_ip( 7 downto  0) & ip_src_ip(15 downto  8);
+    pseudohdr_1 <= ip_src_ip(23 downto 16) & ip_src_ip(31 downto 24);
+    pseudohdr_2 <= ip_dst_ip( 7 downto  0) & ip_dst_ip(15 downto  8);
+    pseudohdr_3 <= ip_dst_ip(23 downto 16) & ip_dst_ip(31 downto 24);
+    pseudohdr_4 <= x"0011";  -- UDP Protocol
+    pseudohdr_5 <= udp_length; 
+    pseudohdr_6 <= udp_src_port; 
+    pseudohdr_7 <= udp_dst_port; 
+    pseudohdr_8 <= udp_length; 
+    pseudohdr_9 <= udp_checksum; 
+    
 process(clk)
     begin
         if rising_edge(clk) then
@@ -67,8 +92,8 @@ process(clk)
                 when "0011" => data_out <= udp_dst_port( 7 downto 0);  data_valid_out <= '1';
                 when "0100" => data_out <= udp_length(15 downto 8);    data_valid_out <= '1';
                 when "0101" => data_out <= udp_length( 7 downto 0);    data_valid_out <= '1';                    
-                when "0110" => data_out <= udp_checksum(15 downto  8); data_valid_out <= '1';
-                when "0111" => data_out <= udp_checksum( 7 downto  0); data_valid_out <= '1';
+                when "0110" => data_out <= udp_checksum(15 downto 8);  data_valid_out <= '1';
+                when "0111" => data_out <= udp_checksum( 7 downto 0);  data_valid_out <= '1';
                 when others => data_out <= data_delay(0)(7 downto 0);  data_valid_out <= data_delay(0)(8);
             end case;
 
@@ -87,6 +112,19 @@ process(clk)
                 end if;
             end if;     
             data_valid_in_last <= data_valid_in;
+        
+            -- Pipelined checksum calculation    
+            udp_checksum_u1a <= to_unsigned(0,20) + unsigned(pseudohdr_0) + unsigned(pseudohdr_1) 
+                                                  + unsigned(pseudohdr_2) + unsigned(pseudohdr_3) 
+                                                  + unsigned(pseudohdr_4); 
+            udp_checksum_u1b <= to_unsigned(0,20) + unsigned(pseudohdr_5) 
+                                                  + unsigned(pseudohdr_6) + unsigned(pseudohdr_7) 
+                                                  + unsigned(pseudohdr_8) + unsigned(data_checksum); 
+            udp_checksum_u2 <= to_unsigned(0,17) + udp_checksum_u1a(15 downto 0) + udp_checksum_u1a(19 downto 16) 
+                                                 + udp_checksum_u1b(15 downto 0) + udp_checksum_u1b(19 downto 16);
+            udp_checksum_u3 <= udp_checksum_u2(15 downto 0) + udp_checksum_u2(16 downto 16);
+            udp_checksum    <= not std_logic_vector(udp_checksum_u3);
+            
         end if;
     end process;
 end Behavioral;

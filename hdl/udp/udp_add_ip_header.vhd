@@ -27,9 +27,8 @@ entity udp_add_ip_header is
            data_out           : out STD_LOGIC_VECTOR (7 downto 0)  := (others => '0');
            
            udp_data_length    : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
-           ip_checksum        : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
            ip_src_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
-           ip_dest_ip         : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
+           ip_dst_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
 end udp_add_ip_header;
 
 architecture Behavioral of udp_add_ip_header is
@@ -50,34 +49,61 @@ architecture Behavioral of udp_add_ip_header is
     constant ip_ttl             : STD_LOGIC_VECTOR ( 7 downto 0)  := x"FF";
     constant ip_protocol        : STD_LOGIC_VECTOR ( 7 downto 0)  := x"11";
     signal   ip_length          : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
-               
+
+    signal ip_checksum_1a       : unsigned(19 downto 0)  := (others => '0');
+    signal ip_checksum_1b       : unsigned(19 downto 0)  := (others => '0');
+    signal ip_checksum_2        : unsigned(19 downto 0)  := (others => '0');
+    signal ip_checksum_3        : unsigned(16 downto 0)  := (others => '0');
+    signal ip_checksum          : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_0            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_1            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_2            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_3            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_4            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_5            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_6            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_7            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_8            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_word_9            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
 begin
     ip_length <= std_logic_vector(unsigned(udp_data_length)+28);
+
+    ip_word_0 <= ip_version & ip_header_len & ip_type_of_service;
+    ip_word_1 <= ip_length;
+    ip_word_2 <= ip_identification;
+    ip_word_3 <= ip_flags & ip_fragment_offset;
+    ip_word_4 <= ip_ttl & ip_protocol;
+    ip_word_5 <= ip_checksum;
+    ip_word_6 <= ip_src_ip( 7 downto 0) & ip_src_ip(15 downto 8);
+    ip_word_7 <= ip_src_ip(23 downto 16) & ip_src_ip(31 downto 24);
+    ip_word_8 <= ip_dst_ip( 7 downto 0)  & ip_dst_ip(15 downto 8);
+    ip_word_9 <= ip_dst_ip(23 downto 16) & ip_dst_ip(31 downto 24);
+
 process(clk)
     begin
         if rising_edge(clk) then
             case count is
-                when "00000" => data_out <= ip_version & ip_header_len;                 data_valid_out <= '1';
-                when "00001" => data_out <= ip_type_of_service;                         data_valid_out <= '1';
-                when "00010" => data_out <= ip_length(15 downto 8);                     data_valid_out <= '1';
-                when "00011" => data_out <= ip_length( 7 downto 0);                     data_valid_out <= '1';
-                when "00100" => data_out <= ip_identification(15 downto 8);             data_valid_out <= '1';
-                when "00101" => data_out <= ip_identification( 7 downto 0);             data_valid_out <= '1';
-                when "00110" => data_out <= ip_flags & ip_fragment_offset(12 downto 8); data_valid_out <= '1';
-                when "00111" => data_out <= ip_fragment_offset( 7 downto 0);            data_valid_out <= '1';
-                when "01000" => data_out <= ip_ttl;                                     data_valid_out <= '1';
-                when "01001" => data_out <= ip_protocol;                                data_valid_out <= '1';
-                when "01010" => data_out <= ip_checksum(15 downto 8);                   data_valid_out <= '1';
-                when "01011" => data_out <= ip_checksum( 7 downto 0);                   data_valid_out <= '1';
-                when "01100" => data_out <= ip_src_ip( 7 downto 0);                     data_valid_out <= '1';
-                when "01101" => data_out <= ip_src_ip(15 downto 8);                     data_valid_out <= '1';
-                when "01110" => data_out <= ip_src_ip(23 downto 16);                    data_valid_out <= '1';
-                when "01111" => data_out <= ip_src_ip(31 downto 24);                    data_valid_out <= '1';
-                when "10000" => data_out <= ip_dest_ip( 7 downto 0);                    data_valid_out <= '1';
-                when "10001" => data_out <= ip_dest_ip(15 downto 8);                    data_valid_out <= '1';
-                when "10010" => data_out <= ip_dest_ip(23 downto 16);                   data_valid_out <= '1';
-                when "10011" => data_out <= ip_dest_ip(31 downto 24);                   data_valid_out <= '1';                         
-                when others  => data_out <= data_delay(0)(7 downto 0);                  data_valid_out <= data_delay(0)(8);
+                when "00000" => data_out <= ip_word_0(15 downto 8);    data_valid_out <= '1';
+                when "00001" => data_out <= ip_word_0( 7 downto 0);    data_valid_out <= '1';
+                when "00010" => data_out <= ip_word_1(15 downto 8);    data_valid_out <= '1';
+                when "00011" => data_out <= ip_word_1( 7 downto 0);    data_valid_out <= '1';
+                when "00100" => data_out <= ip_word_2(15 downto 8);    data_valid_out <= '1';
+                when "00101" => data_out <= ip_word_2( 7 downto 0);    data_valid_out <= '1';
+                when "00110" => data_out <= ip_word_3(15 downto 8);    data_valid_out <= '1';
+                when "00111" => data_out <= ip_word_3( 7 downto 0);    data_valid_out <= '1';
+                when "01000" => data_out <= ip_word_4(15 downto 8);    data_valid_out <= '1';
+                when "01001" => data_out <= ip_word_4( 7 downto 0);    data_valid_out <= '1';
+                when "01010" => data_out <= ip_word_5(15 downto 8);    data_valid_out <= '1';
+                when "01011" => data_out <= ip_word_5( 7 downto 0);    data_valid_out <= '1';
+                when "01100" => data_out <= ip_word_6(15 downto 8);    data_valid_out <= '1';
+                when "01101" => data_out <= ip_word_6( 7 downto 0);    data_valid_out <= '1';
+                when "01110" => data_out <= ip_word_7(15 downto 8);    data_valid_out <= '1';
+                when "01111" => data_out <= ip_word_7( 7 downto 0);    data_valid_out <= '1';
+                when "10000" => data_out <= ip_word_8(15 downto 8);    data_valid_out <= '1';
+                when "10001" => data_out <= ip_word_8( 7 downto 0);    data_valid_out <= '1';
+                when "10010" => data_out <= ip_word_9(15 downto 8);    data_valid_out <= '1';
+                when "10011" => data_out <= ip_word_9( 7 downto 0);    data_valid_out <= '1';                         
+                when others  => data_out <= data_delay(0)(7 downto 0); data_valid_out <= data_delay(0)(8);
             end case;
 
             data_delay(0 to data_delay'high-1) <= data_delay(1 to data_delay'high);
@@ -94,6 +120,23 @@ process(clk)
                     count <= count + 1;
                 end if;
             end if;     
+            --------------------------------------------------------------------------------
+            -- Checksum is calculated in a pipeline, it will be ready by the time we need it
+            --------------------------------------------------------------------------------
+            ip_checksum_1a <= to_unsigned(0,20) 
+                            + unsigned(ip_word_0)
+                            + unsigned(ip_word_1) 
+                            + unsigned(ip_word_2)
+                            + unsigned(ip_word_3)
+                            + unsigned(ip_word_4);
+            ip_checksum_1b <= to_unsigned(0,20) 
+                            + unsigned(ip_word_6)
+                            + unsigned(ip_word_7)
+                            + unsigned(ip_word_8)
+                            + unsigned(ip_word_9);
+            ip_checksum_2 <= ip_checksum_1a + ip_checksum_1b;
+            ip_checksum_3 <=  to_unsigned(0,17) + ip_checksum_2(15 downto 0) + ip_checksum_2(19 downto 16); 
+            ip_checksum   <= not std_logic_vector(ip_checksum_3(15 downto 0) + ip_checksum_3(16 downto 16)); 
             data_valid_in_last <= data_valid_in;
 
         end if;
