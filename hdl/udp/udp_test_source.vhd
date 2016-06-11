@@ -40,7 +40,7 @@ architecture Behavioral of udp_test_source is
     type t_state is (waiting, armed, sending);
     signal state : t_state := waiting;
     signal countdown  : unsigned(23 downto 0) := to_unsigned(1000,24);
-    signal data_count : unsigned(4 downto 0) := to_unsigned(0,5);
+    signal data_count : unsigned(7 downto 0) := to_unsigned(0,8);
 begin
 
 process(clk)
@@ -76,7 +76,7 @@ process(clk)
                     udp_tx_dst_mac  <= x"FF_FF_FF_FF_FF_FF";
                     udp_tx_dst_ip   <= x"FF_00_00_0A";
                     udp_tx_dst_port <= x"2345";
-                    udp_tx_data <= "000" & std_logic_vector(data_count);
+                    udp_tx_data     <= std_logic_vector(data_count);
 
                     data_count <= data_count + 1;
                     if data_count = 31 then
