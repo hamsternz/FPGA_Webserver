@@ -17,14 +17,8 @@
 -- Additional Comments:
 -- 
 ----------------------------------------------------------------------------------
-
-
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
-
--- Uncomment the following library declaration if using
--- arithmetic functions with Signed or Unsigned values
---use IEEE.NUMERIC_STD.ALL;
 
 library UNISIM;
 use UNISIM.VComponents.all;
@@ -36,8 +30,10 @@ entity clocking is
 end clocking;
 
 architecture Behavioral of clocking is
-    signal clk100MHz_buffered : std_logic := '0';
-    signal clkfb              : std_logic := '0';
+    signal clk100MHz_buffered     : std_logic := '0';
+    signal clkfb                  : std_logic := '0';
+    signal clk125MHz_unbuffered   : STD_LOGIC;
+    signal clk125MHz90_unbuffered : STD_LOGIC;
 begin
 bufg_100: BUFG 
     port map (
@@ -48,7 +44,7 @@ bufg_100: BUFG
    -- Generate a 125MHz clock from the 100MHz 
    -- system clock 
    ------------------------------------------------------- 
-clocking : PLLE2_BASE
+pll_clocking : PLLE2_BASE
    generic map (
       BANDWIDTH          => "OPTIMIZED",
       CLKFBOUT_MULT      => 10,
@@ -73,14 +69,26 @@ clocking : PLLE2_BASE
    )
    port map (
       CLKIN1   => CLK100MHz_buffered,
-      CLKOUT0 => CLK125MHz,   CLKOUT1 => open,  CLKOUT2 => open,  
-      CLKOUT3 => CLK125MHz90, CLKOUT4 => open,  CLKOUT5 => open,
+      CLKOUT0  => CLK125MHz_unbuffered,   CLKOUT1 => open,  CLKOUT2 => open,  
+      CLKOUT3  => CLK125MHz90_unbuffered, CLKOUT4 => open,  CLKOUT5 => open,
       LOCKED   => open,
       PWRDWN   => '0', 
       RST      => '0',
       CLKFBOUT => clkfb,
       CLKFBIN  => clkfb
    );
+
+bufg_125Mhz: BUFG 
+    port map (
+        i => clk125MHz_unbuffered,
+        o => clk125MHz
+    );
+
+bufg_125Mhz90: BUFG 
+    port map (
+        i => clk125MHz90_unbuffered,
+        o => clk125MHz90
+    );
 
 
 end Behavioral;
