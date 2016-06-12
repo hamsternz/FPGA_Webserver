@@ -46,17 +46,31 @@ architecture Behavioral of udp_tx_buffer_count_checksum_data is
     signal data_count         : unsigned(10 downto 0) := (others => '0');
     signal data_valid_in_last : std_logic := '0';
     signal checksum           : unsigned(16 downto 0) := (others => '0');
+    
+    signal write_enable : std_logic;
+    signal write_data   : std_logic_vector(8 downto 0);
+    signal read_data    : std_logic_vector(8 downto 0) := (others => '0');
 begin
-
-process(clk) 
+    write_enable <= data_valid_in or data_valid_in_last;
+    write_data   <= data_valid_in & data_in;
+    data_valid_out <= read_data(8);
+    data_out       <= read_data(7 downto 0);
+    
+infer_dp_mem_process: process(clk)
+    begin
+        if rising_edge(clk) then
+            if write_enable = '1' then
+                data_buffer(to_integer(write_ptr)) <= write_data;
+            end if;
+            read_data <= data_buffer(to_integer(read_ptr));
+        end if;
+    end process;
+    
+main_proc: process(clk) 
     variable v_checksum : unsigned(16 downto 0) := (others => '0');
     begin
         if rising_edge(clk) then
-            data_out       <= data_in;
-            data_valid_out <= data_valid_in; 
-
             if data_valid_in = '1' or data_valid_in_last = '1' then
-                data_buffer(to_integer(write_ptr)) <= data_valid_in & data_in;
                 write_ptr <= write_ptr + 1; 
             end if;
 
@@ -79,15 +93,11 @@ process(clk)
                 data_count <= (others => '0');
                 checksum   <= (others => '0');
             end if;
+
             data_valid_in_last <= data_valid_in;
             
-            data_valid_out <= data_buffer(to_integer(read_ptr))(8);
-            data_out       <= data_buffer(to_integer(read_ptr))(7 downto 0);
             if read_ptr /= checkpoint then
                 read_ptr <= read_ptr+1;
-            else
-                data_out       <= (others => '0');
-                data_valid_out <= '0';
             end if;
         end if;
     end process;

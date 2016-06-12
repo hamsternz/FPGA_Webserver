@@ -20,7 +20,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity udp_add_ethernet_header is
+entity ethernet_add_header is
     Port ( clk            : in  STD_LOGIC;
            data_valid_in  : in  STD_LOGIC;
            data_in        : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -30,9 +30,9 @@ entity udp_add_ethernet_header is
            ether_type     : in STD_LOGIC_VECTOR (15 downto 0) := (others => '0'); 
            ether_dst_mac  : in STD_LOGIC_VECTOR (47 downto 0) := (others => '0');
            ether_src_mac  : in STD_LOGIC_VECTOR (47 downto 0) := (others => '0'));
-end udp_add_ethernet_header;
+end ethernet_add_header;
 
-architecture Behavioral of udp_add_ethernet_header is
+architecture Behavioral of ethernet_add_header is
     type a_data_delay is array(0 to 14) of std_logic_vector(8 downto 0);
     signal data_delay      : a_data_delay := (others => (others => '0'));
     -------------------------------------------------------

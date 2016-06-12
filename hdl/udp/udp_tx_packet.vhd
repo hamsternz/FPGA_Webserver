@@ -98,7 +98,7 @@ architecture Behavioral of udp_tx_packet is
     signal pre_header_valid  : STD_LOGIC := '0';
     signal pre_header_data   : STD_LOGIC_VECTOR (7 downto 0);
 
-    component udp_add_ethernet_header is
+    component ethernet_add_header is
     Port ( clk            : in  STD_LOGIC;
            data_valid_in  : in  STD_LOGIC;
            data_in        : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -113,7 +113,7 @@ architecture Behavioral of udp_tx_packet is
     signal complete_valid    : STD_LOGIC  := '0';
     signal complete_data     : STD_LOGIC_VECTOR (7 downto 0) := (others => '0');
     
-    component udp_commit_buffer
+    component transport_commit_buffer
     Port ( clk                : in  STD_LOGIC;
            data_valid_in      : in  STD_LOGIC;
            data_in            : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -175,17 +175,17 @@ i_udp_add_ip_header: udp_add_ip_header port map (
         ip_src_ip       => our_ip,
         ip_dst_ip      => tx_dst_ip);           
 
-i_udp_add_ethernet_header: udp_add_ethernet_header port map (
-    clk            => clk,
-    data_valid_in  => pre_header_valid,
-    data_in        => pre_header_data,
-    data_valid_out => complete_valid,
-    data_out       => complete_data,         
-    ether_type     => x"0800",
-    ether_dst_mac  => tx_dst_mac,
-    ether_src_mac  => our_mac);
+i_ethernet_add_header: ethernet_add_header port map (
+        clk            => clk,
+        data_valid_in  => pre_header_valid,
+        data_in        => pre_header_data,
+        data_valid_out => complete_valid,
+        data_out       => complete_data,         
+        ether_type     => x"0800",
+        ether_dst_mac  => tx_dst_mac,
+        ether_src_mac  => our_mac);
 
-i_udp_commit_buffer: udp_commit_buffer port map (
+i_transport_commit_buffer: transport_commit_buffer port map (
         clk                => clk,
         data_valid_in      => complete_valid,
         data_in            => complete_data,

@@ -54,9 +54,28 @@ architecture Behavioral of udp_commit_buffer is
 
     -- counter for the delay between packets
     signal read_pause : unsigned(5 downto 0) := (others => '0');
+
+    signal write_data   : std_logic_vector(8 downto 0);
+    signal read_data    : std_logic_vector(8 downto 0) := (others => '0');    
 begin
+
+    with data_valid_in select write_data   <= data_valid_in & data_in when '1',  
+                                              (others => '0') when others;
+    i_packet_out_valid <= read_data(8);
+    i_packet_out_data  <= read_data(7 downto 0);
+    
     packet_out_valid <= i_packet_out_valid;
     packet_out_data  <= i_packet_out_data;
+infer_dp_mem_process: process(clk)
+    begin
+        if rising_edge(clk) then
+            if write_state = write_writing or data_valid_in = '1' then 
+                data_buffer(to_integer(write_addr)) <= write_data;
+            end if;
+            read_data <= data_buffer(to_integer(read_addr));
+        end if;
+    end process;
+
 
 process(clk) 
     variable write_data : std_logic_vector(8 downto 0);
@@ -67,17 +86,8 @@ process(clk)
             -- would overrun the then packet is dropped (i.e.
             -- committed_addr will not be updated).
             ------------------------------------------------
-            if write_state = write_writing or data_valid_in = '1' then 
-                write_data := (others => '0');
-                if data_valid_in = '1' then
-                    write_data := data_valid_in & data_in;
-                end if;
-                data_buffer(to_integer(write_addr)) <= write_data;
-            end if;
-            
             case write_state is
-                when write_writing =>
-                    
+                when write_writing =>                    
                     if write_addr+1 = read_addr then
                         -------------------------------------------------------
                         -- If we would wrap around? Is so then abort the packet
@@ -87,7 +97,7 @@ process(clk)
                     else
                         write_addr <= write_addr + 1;
                         if data_valid_in = '0' then
-                            committed_addr <= write_addr + 1;
+                            committed_addr <= write_addr;
                             write_state    <= write_idle;
                         end if;
                     end if;
@@ -113,11 +123,9 @@ process(clk)
             -------------------------------------------
             case read_state is
                 when read_reading =>
-                    if(i_packet_out_valid = '0') then
+                    if read_addr = committed_addr then
                         read_state <= read_waiting;                      
                     else
-                        i_packet_out_valid <= data_buffer(to_integer(read_addr))(8);
-                        i_packet_out_data  <= data_buffer(to_integer(read_addr))(7 downto 0);
                         read_addr <= read_addr + 1;
                     end if;
                     
@@ -126,8 +134,6 @@ process(clk)
                     -- Add some 'empy space' for the frame check sequence,
                     -- interpacket gap and the preamble that will be appended
                     ---------------------------------------------------------
-                    i_packet_out_valid   <= '0';
-                    i_packet_out_data    <= (others => '0');
                     if read_pause = to_unsigned(fcs_length + interpacket_gap + for_next_preamble-1,6) then
                         read_state <= read_idle;
                         -- Release the output stream
@@ -144,16 +150,12 @@ process(clk)
                     if read_addr = committed_addr then
                         -- Nothing to do
                         packet_out_request <= '0';    
-                        i_packet_out_valid <= '0';
-                        i_packet_out_data  <= (others => '0');
                     else
                         -- Ask for the TX interfaces
                         packet_out_request <= '1';  
                         if packet_out_granted = '1' then
                             -- Granted, so start sending! 
-                            i_packet_out_valid <= data_buffer(to_integer(read_addr))(8);
-                            i_packet_out_data  <= data_buffer(to_integer(read_addr))(7 downto 0);
-                            read_addr <= read_addr + 1;
+                            read_addr  <= read_addr + 1;
                             read_state <= read_reading;
                         end if;
                     end if;
