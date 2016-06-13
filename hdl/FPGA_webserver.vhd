@@ -62,6 +62,8 @@ architecture Behavioral of FPGA_webserver is
     constant our_mac     : std_logic_vector(47 downto 0) := x"AB_89_67_45_23_02"; -- NOTE this is 02:23:45:67:89:AB
     constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";       -- NOTE octets are reversed 
     constant our_netmask : std_logic_vector(31 downto 0) := x"00_FF_FF_FF";       -- NOTE octets are reversed 
+    constant our_gateway : std_logic_vector(31 downto 0) := x"FE_00_00_0A";       -- NOTE octets are reversed
+
     signal phy_ready     : std_logic := '0';
     -----------------------------
     -- For the clocking 

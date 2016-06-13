@@ -90,8 +90,8 @@ process(clk)
                     udp_tx_data     <= std_logic_vector(data_count);
 
                     data_count <= data_count + 1;
-                    if data_count = 31 then
-                        state <= waiting;  -- sending as fast as possible.
+                    if data_count = 2 then
+                        state <= waiting;  
                     end if;
                 when others =>
                     state <= waiting;

@@ -1,0 +1,58 @@
+Here's how to use the UDP interface.
+
+General setup
+=============
+In the top level design, set the MAC address, IP address, netmask and gateway:
+
+Here is an example for a MAC & IP setup (for 10.0.0.10/24, gw 10.0.0.254
+)
+    -- NOTE this is 02:23:45:67:89:AB
+    constant our_mac     : std_logic_vector(47 downto 0) := x"AB_89_67_45_23_02"; 
+    -- NOTE octets are reversed 
+    constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";       
+    constant our_netmask : std_logic_vector(31 downto 0) := x"00_FF_FF_FF";       
+    constant our_gateway : std_logic_vector(31 downto 0) := x"FE_00_00_0A";       
+
+Transmitting UDP packets
+========================
+(see example in hdl/udp/udp_test_source.vhd)
+0. (not yet written) Resolve the target IP address into a MAC address using 
+   the ARP resolver.
+
+1. Wait until 'udp_tx_busy' is zero
+
+2. Provide the target MAC, source and destination ports and destination IP address, 
+   and first byte of data to the udp_tx interface, and assert udp_tx_valid.
+
+   Here is an example, of broadcasting to 10.0.0.255. Note the ordering of the 
+   octets in the IP address:
+
+     udp_tx_valid <= '1';
+     udp_tx_src_port <= std_logic_vector(to_unsigned(4660,16));
+     udp_tx_dst_mac  <= x"FF_FF_FF_FF_FF_FF";
+     udp_tx_dst_ip   <= x"FF_00_00_0A";
+     udp_tx_dst_port <= std_logic_vector(to_unsigned(9029,16));
+     udp_tx_data     <= x"FF";
+   
+3. Provide additional data bytes on contiguious cycles. When udp_tx_valid drops it is
+   considered the end of the packet. Do not send more than 1472 bytes at a time.
+
+4. Go back to step 1 to send the next packet.
+
+Receiving UDP packets
+=====================
+(see example in hdl/udp/udp_test_sink.vhd)
+
+1. Wait for 'udp_rx_valid' to be asserted.
+
+2. Check for your desired UDP port number on 'udp_rx_dst_port'
+
+2. Data will be on 'udp_rx_data' while 'udp_rx_valid' is asserted.
+
+   Here is an example, of recieving on port 4660.
+
+    if udp_rx_valid = '1' then
+        if udp_rx_dst_port = std_logic_vector(to_unsigned(4660, 16)) then  
+            leds <= udp_rx_data;
+        end if;
+    end if;
