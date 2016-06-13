@@ -121,7 +121,7 @@ process(clk125MHz)
                 input_empty <= '1';
             end if;
 
-            if count2 = 200 then
+            if count2 = 20000 then
                 count  <= 0;
                 count2 <= 0;
             else

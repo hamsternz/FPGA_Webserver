@@ -4,12 +4,33 @@
 -- Create Date: 05.06.2016 22:31:14
 -- Module Name: udp_tx_packet - Behavioral
 -- 
--- Dependencies: Contruct and send out UDP packets 
+-- Description: Construct and send out UDP packets 
 -- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
+------------------------------------------------------------------------------------
+-- FPGA_Webserver from https://github.com/hamsternz/FPGA_Webserver
+------------------------------------------------------------------------------------
+-- The MIT License (MIT)
 -- 
+-- Copyright (c) 2015 Michael Alan Field <hamster@snap.net.nz>
+-- 
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+-- 
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+-- 
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+--
 ----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
@@ -35,7 +56,7 @@ entity udp_tx_packet is
 end udp_tx_packet;
 
 architecture Behavioral of udp_tx_packet is
-
+    signal busy_countdown    : unsigned(7 downto 0) := (others => '0');
     -- For holding the destination and port details on the first data transfer
     signal udp_tx_valid_last : STD_LOGIC := '0';
     signal tx_src_port       : std_logic_vector(15 downto 0) := (others => '0');
@@ -77,12 +98,12 @@ architecture Behavioral of udp_tx_packet is
            udp_dst_port    : in  std_logic_vector(15 downto 0));
     end component;
 
-    signal pre_ip_valid  : STD_LOGIC := '0';
-    signal pre_ip_data   : STD_LOGIC_VECTOR (7 downto 0);
-    signal ip_length     : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
-    signal ip_checksum   : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal pre_ip_valid   : STD_LOGIC := '0';
+    signal pre_ip_data    : STD_LOGIC_VECTOR (7 downto 0);
+    signal ip_length      : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+    signal ip_data_length : std_logic_vector(15 downto 0);
 
-    component udp_add_ip_header is
+    component ip_add_header is
     Port ( clk                : in  STD_LOGIC;
 
            data_valid_in      : in  STD_LOGIC;
@@ -90,7 +111,8 @@ architecture Behavioral of udp_tx_packet is
            data_valid_out     : out STD_LOGIC := '0';
            data_out           : out STD_LOGIC_VECTOR (7 downto 0)  := (others => '0');
 
-           udp_data_length    : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+           ip_data_length    : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+           ip_protocol        : in  STD_LOGIC_VECTOR ( 7 downto 0)  := (others => '0');
            ip_src_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
            ip_dst_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
     end component;
@@ -122,19 +144,47 @@ architecture Behavioral of udp_tx_packet is
            packet_out_valid   : out std_logic := '0';         
            packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
     end component;
-
 begin
 
 process(clk)
     begin
         if rising_edge(clk) then
             -- Capture the destination address data on the first cycle of the data packet 
-            if udp_tx_valid = '1' and udp_tx_valid_last = '0' then 
-                tx_src_port      <= udp_tx_src_port;
-                tx_dst_mac       <= udp_tx_dst_mac;
-                tx_dst_ip        <= udp_tx_dst_ip;
-                tx_dst_port      <= udp_tx_dst_port;
+            if udp_tx_valid = '1' then
+                if udp_tx_valid_last = '0' then 
+                    tx_src_port      <= udp_tx_src_port;
+                    tx_dst_mac       <= udp_tx_dst_mac;
+                    tx_dst_ip        <= udp_tx_dst_ip;
+                    tx_dst_port      <= udp_tx_dst_port;
+                    busy_countdown   <= to_unsigned(8+64+12-4,8);
+                            -- 8  = preamble
+                            -- 64 = minimum ethernet header
+                            -- 12 = minimum inter-packet gap
+                            -- and -4 is a fix for latency
+                    udp_tx_busy <= '1';
+                else
+                    -- Allow for the bytes that will be added
+                    if busy_countdown > 8+14+20+8+4+12 -3  then
+                        -- allow for premable (8)
+                        -- and ethernet Header(14)
+                        -- and ip header (20)
+                        -- and udp hereader (8)
+                        -- and ethernet FCS (4)
+                        -- and minimum inter-packet gap
+                        -- and -3 is a fix for latency
+                        busy_countdown  <= busy_countdown-1;
+                    end if; 
+                end if;
+            else 
+                -- Keep udp_tx_busy asserted to allow for 
+                -- everything to be wrapped around the data
+                if busy_countdown > 0 then
+                    busy_countdown <= busy_countdown - 1;
+                else               
+                    udp_tx_busy <= '0';
+                end if;
             end if;
+            
             udp_tx_valid_last <= udp_tx_valid;
         end if;
     end process;
@@ -157,22 +207,24 @@ i_udp_add_udp_header: udp_add_udp_header port map (
     data_out        => pre_ip_data,
 
     ip_src_ip       => our_ip,
-    ip_dst_ip      => tx_dst_ip,           
+    ip_dst_ip       => tx_dst_ip,           
 
     data_length     => data_length,
     data_checksum   => data_checksum,
     udp_src_port    => tx_src_port,
     udp_dst_port    => tx_dst_port);
 
-i_udp_add_ip_header: udp_add_ip_header port map (
+    ip_data_length <= std_logic_vector(unsigned(data_length)+8);
+i_ip_add_header: ip_add_header port map (
         clk             => clk,
         data_valid_in   => pre_ip_valid,
         data_in         => pre_ip_data,
         data_valid_out  => pre_header_valid,
         data_out        => pre_header_data,
     
-        udp_data_length => data_length,
-        ip_src_ip       => our_ip,
+        ip_data_length => ip_data_length,
+        ip_protocol    => x"11",
+        ip_src_ip      => our_ip,
         ip_dst_ip      => tx_dst_ip);           
 
 i_ethernet_add_header: ethernet_add_header port map (

@@ -5,13 +5,31 @@
 --
 -- Description: Top level of the IP processing design. 
 -- 
--- Dependencies: 
+------------------------------------------------------------------------------------
+-- FPGA_Webserver from https://github.com/hamsternz/FPGA_Webserver
+------------------------------------------------------------------------------------
+-- The MIT License (MIT)
 -- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
+-- Copyright (c) 2015 Michael Alan Field <hamster@snap.net.nz>
 -- 
-----------------------------------------------------------------------------------
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+-- 
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+-- 
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
+------------------------------------------------------------------------------------
 
 
 library IEEE;
@@ -35,14 +53,23 @@ entity main_design is
        phy_ready          : in  STD_LOGIC;
        status             : out STD_LOGIC_VECTOR (3 downto 0);
 
-        -- data received over UDP
-        udp_rx_valid         : out std_logic := '0';
-        udp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
-        udp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
-        udp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
-        udp_rx_dst_broadcast : out std_logic := '0';
-        udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
-   
+       -- data received over UDP
+       udp_rx_valid         : out std_logic := '0';
+       udp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+       udp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+       udp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+       udp_rx_dst_broadcast : out std_logic := '0';
+       udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
+        
+       -- data to be sent over UDP
+       udp_tx_busy          : out std_logic := '1';
+       udp_tx_valid         : in  std_logic := '0';
+       udp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+       udp_tx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+       udp_tx_dst_mac       : in  std_logic_vector(47 downto 0) := (others => '0');
+       udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
+       udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+
        eth_txck           : out std_logic := '0';
        eth_txctl          : out std_logic := '0';
        eth_txd            : out std_logic_vector(3 downto 0) := (others => '0'));
@@ -188,26 +215,6 @@ architecture Behavioral of main_design is
     signal packet_udp_granted   : std_logic;
     signal packet_udp_valid     : std_logic;         
     signal packet_udp_data      : std_logic_vector(7 downto 0);         
-    signal udp_tx_busy          : std_logic;
-    signal udp_tx_valid         : std_logic;
-    signal udp_tx_data          : std_logic_vector(7 downto 0);
-    signal udp_tx_src_port      : std_logic_vector(15 downto 0);
-    signal udp_tx_dst_mac       : std_logic_vector(47 downto 0);
-    signal udp_tx_dst_ip        : std_logic_vector(31 downto 0);
-    signal udp_tx_dst_port      : std_logic_vector(15 downto 0);
-
-    component udp_test_source is
-    Port ( 
-        clk                  : in STD_LOGIC;
-	    -- data to be sent over UDP
-        udp_tx_busy          : in  std_logic := '0';
-        udp_tx_valid         : out std_logic := '0';
-        udp_tx_data          : out std_logic_vector(7 downto 0)  := (others => '0');
-        udp_tx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
-        udp_tx_dst_mac       : out std_logic_vector(47 downto 0) := (others => '0');
-        udp_tx_dst_ip        : out std_logic_vector(31 downto 0) := (others => '0');
-        udp_tx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0'));
-    end component;
 
     -------------------------------------------
     -- TX Interface
@@ -240,32 +247,9 @@ architecture Behavioral of main_design is
            eth_txctl   : out STD_LOGIC;
            eth_txd     : out STD_LOGIC_VECTOR (3 downto 0));
     end component;
-    -------------------------------------------
-    -- Debugging
-    -------------------------------------------    
-    COMPONENT ila_0
-    PORT (
-        clk    : IN STD_LOGIC;
-        probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-        probe1 : IN STD_LOGIC_VECTOR(7 DOWNTO 0); 
-        probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-        probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-        probe5 : IN STD_LOGIC_VECTOR(0 DOWNTO 0)
-    );
-    END COMPONENT ;
  
 begin
    status  <= link_full_duplex & link_1000mb & link_100mb & link_10mb;
-
---i_ila_0: ila_0 port map (
---    clk       => clk125MHz,
---    probe0(0) => input_data_present, 
---    probe1    => input_data,
---    probe2(0) => spaced_out_data_enable, 
---    probe3(0) => packet_data_valid,
---    probe4(0) => link_1000mb,
---    probe5(0) => packet_data_valid);
 
     ----------------------------------------------------------------------
     -- As well as converting nibbles to bytes (for the slowe speeds)
@@ -346,15 +330,6 @@ i_icmp_handler: icmp_handler  generic map (
                 packet_out_valid   => packet_icmp_valid,          
                 packet_out_data    => packet_icmp_data);
 
-i_udp_test_source: udp_test_source port map (
-        clk => clk125MHz,
-        udp_tx_busy          => udp_tx_busy,
-        udp_tx_valid         => udp_tx_valid,
-        udp_tx_data          => udp_tx_data,
-        udp_tx_src_port      => udp_tx_src_port,
-        udp_tx_dst_mac       => udp_tx_dst_mac,
-        udp_tx_dst_ip        => udp_tx_dst_ip,
-        udp_tx_dst_port      => udp_tx_dst_port);
 
 i_udp_handler: udp_handler 
     generic map (

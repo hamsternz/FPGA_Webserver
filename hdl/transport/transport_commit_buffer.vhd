@@ -8,11 +8,30 @@
 --              If the buffer gets over-run with data (e.g. if the TX interface is 
 --              busy) then it drops the packet.  
 -- 
--- Dependencies: 
+------------------------------------------------------------------------------------
+-- FPGA_Webserver from https://github.com/hamsternz/FPGA_Webserver
+------------------------------------------------------------------------------------
+-- The MIT License (MIT)
 -- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
+-- Copyright (c) 2015 Michael Alan Field <hamster@snap.net.nz>
+-- 
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+-- 
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+-- 
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
 -- 
 ----------------------------------------------------------------------------------
 library IEEE;
@@ -45,7 +64,8 @@ architecture Behavioral of transport_commit_buffer is
     type s_write_state is (write_idle, write_writing, write_aborted);
     signal write_state : s_write_state  := write_idle;
     
-    signal i_packet_out_valid   : std_logic := '0';         
+    signal i_packet_out_valid      : std_logic := '0'; 
+    signal i_packet_out_valid_last : std_logic := '0';
     signal i_packet_out_data    : std_logic_vector(7 downto 0) := (others => '0');
 
     constant fcs_length        : integer := 4;
@@ -53,13 +73,14 @@ architecture Behavioral of transport_commit_buffer is
     constant for_next_preamble : integer := 8; 
 
     -- counter for the delay between packets
-    signal read_pause : unsigned(5 downto 0) := (others => '0');
+    signal read_pause : unsigned(5 downto 0) := to_unsigned(fcs_length + interpacket_gap + for_next_preamble-1,6);
 
     signal write_data   : std_logic_vector(8 downto 0);
     signal read_data    : std_logic_vector(8 downto 0) := (others => '0');    
 begin
     with data_valid_in select write_data   <= data_valid_in & data_in when '1',  
                                               (others => '0') when others;
+    i_packet_out_valid <= read_data(8);
     i_packet_out_valid <= read_data(8);
     i_packet_out_data  <= read_data(7 downto 0);
     
@@ -75,19 +96,19 @@ infer_dp_mem_process: process(clk)
 
             this_read_addr := read_addr;
             if i_packet_out_valid = '0' then
-                if read_pause = to_unsigned(fcs_length + interpacket_gap + for_next_preamble-1,6) then
-                    if read_addr /= committed_addr then 
-                       this_read_addr := read_addr + 1;
-                       read_pause <= (others => '0');
-                    end if;
+                if read_addr = committed_addr or i_packet_out_valid_last = '1' then
+                   packet_out_request <= '0';
                 else
-                    read_pause <= read_pause + 1;                        
+                   packet_out_request <= '1';
+                   if packet_out_granted = '1' then  
+                       this_read_addr := read_addr + 1;
+                   end if;
                 end if;
             else
                 this_read_addr := read_addr + 1;
-                read_pause <= (others => '0');
             end if;                   
 
+            i_packet_out_valid_last <= i_packet_out_valid;
             read_data <= data_buffer(to_integer(this_read_addr));
             read_addr <= this_read_addr;
         end if;

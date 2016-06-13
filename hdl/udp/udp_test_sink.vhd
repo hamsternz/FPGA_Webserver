@@ -1,9 +1,9 @@
 ----------------------------------------------------------------------------------
--- Engineer: Mike Field <hamster@snap.net.nz> 
+-- Engineer: Mike Field <hamster@snap.net.nz>
 -- 
--- Description: Control the timing of reset signals 
--- 
--- Dependencies: 
+-- Module Name: udp_test_sink - Behavioral
+--
+-- Description: Receive UDP packets for testing. 
 -- 
 ------------------------------------------------------------------------------------
 -- FPGA_Webserver from https://github.com/hamsternz/FPGA_Webserver
@@ -29,30 +29,40 @@
 -- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 -- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 -- THE SOFTWARE.
-------------------------------------------------------------------------------------
+--
+----------------------------------------------------------------------------------
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity reset_controller is
-    Port ( clk125mhz : in STD_LOGIC;
-           phy_ready : out STD_LOGIC;
-           eth_rst_b : out STD_LOGIC);
-end reset_controller;
+entity udp_test_sink is
+    Port ( 
+        clk                 : in  STD_LOGIC;
 
-architecture Behavioral of reset_controller is
-    signal reset_counter : unsigned(24 downto 0)     := (others => '0');
+       -- data received over UDP
+       udp_rx_valid         : in  std_logic := '0';
+       udp_rx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+       udp_rx_src_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
+       udp_rx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+       udp_rx_dst_broadcast : in  std_logic := '0';
+       udp_rx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+
+       leds                 : out std_logic_vector(7 downto 0) := (others => '0'));
+end udp_test_sink;
+
+architecture Behavioral of udp_test_sink is
+    signal udp_rx_valid_last : std_logic := '0';
 begin
 
-control_reset: process(clk125MHz)
-     begin
-        if rising_edge(clk125MHz) then           
-           if reset_counter(reset_counter'high) = '0' then
-               reset_counter <= reset_counter + 1;
-           end if; 
-           eth_rst_b <= reset_counter(reset_counter'high) or reset_counter(reset_counter'high-1);
-           phy_ready  <= reset_counter(reset_counter'high);
+udp_test_sink: process(clk) 
+    begin
+        if rising_edge(clk) then
+            -- assign any data on UDP port 5140 (0x1414) to the LEDs
+            if udp_rx_valid = '1' and udp_rx_dst_port = std_logic_vector(to_unsigned(4660, 16)) then  
+                leds <= udp_rx_data;
+            end if;
+            udp_rx_valid_last <= udp_rx_valid;
         end if;
-     end process;
+    end process;
 
 end Behavioral;

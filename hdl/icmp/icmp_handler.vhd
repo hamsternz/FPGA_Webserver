@@ -1,20 +1,34 @@
 ----------------------------------------------------------------------------------
--- Company: 
--- Engineer: 
+-- Engineer: Mike Field <hamstger@snap.net.nz> 
 -- 
--- Create Date: 18.05.2016 22:29:27
--- Design Name: 
 -- Module Name: icmp_handler - Behavioral
--- Project Name: 
--- Target Devices: 
--- Tool Versions: 
--- Description: 
+--
+-- Description: For TXand RX of ICMP Ping packets 
 -- 
--- Dependencies: 
+------------------------------------------------------------------------------------
+-- FPGA_Webserver from https://github.com/hamsternz/FPGA_Webserver
+------------------------------------------------------------------------------------
+-- The MIT License (MIT)
 -- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
+-- Copyright (c) 2015 Michael Alan Field <hamster@snap.net.nz>
+-- 
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+-- 
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+-- 
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
 -- 
 ----------------------------------------------------------------------------------
 library IEEE;
@@ -164,20 +178,7 @@ architecture Behavioral of icmp_handler is
     signal i_packet_out_request : std_logic := '0';
     signal i_packet_out_granted : std_logic := '0';
     signal i_packet_out_data    : std_logic_vector(7 DOWNTO 0) := (others => '0');
-    -------------------------------------------
-    -- Debugging
-    -------------------------------------------    
-    COMPONENT ila_0
-    PORT (
-        clk    : IN STD_LOGIC;
-        probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-        probe1 : IN STD_LOGIC_VECTOR(7 DOWNTO 0);
-        probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
-        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-        probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
-        probe5 : IN STD_LOGIC_VECTOR(7 DOWNTO 0)
-    );
-    END COMPONENT ;
+
 begin
 i_ethernet_extract_header: ethernet_extract_header generic map (
         our_mac => our_mac)

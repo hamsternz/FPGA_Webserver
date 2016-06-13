@@ -1,15 +1,34 @@
 ----------------------------------------------------------------------------------
 -- Engineer: Mike Field <hamster@snap.net.nz>
 -- 
--- Module Name: udp_add_ip_header - Behavioral
+-- Module Name: ip_add_header - Behavioral
 --
--- Description: 
+-- Description: Add the IP header fields to a data stream 
 -- 
--- Dependencies: 
+------------------------------------------------------------------------------------
+-- FPGA_Webserver from https://github.com/hamsternz/FPGA_Webserver
+------------------------------------------------------------------------------------
+-- The MIT License (MIT)
 -- 
--- Revision:
--- Revision 0.01 - File Created
--- Additional Comments:
+-- Copyright (c) 2015 Michael Alan Field <hamster@snap.net.nz>
+-- 
+-- Permission is hereby granted, free of charge, to any person obtaining a copy
+-- of this software and associated documentation files (the "Software"), to deal
+-- in the Software without restriction, including without limitation the rights
+-- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+-- copies of the Software, and to permit persons to whom the Software is
+-- furnished to do so, subject to the following conditions:
+-- 
+-- The above copyright notice and this permission notice shall be included in
+-- all copies or substantial portions of the Software.
+-- 
+-- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+-- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+-- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+-- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+-- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+-- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+-- THE SOFTWARE.
 -- 
 ----------------------------------------------------------------------------------
 
@@ -18,7 +37,7 @@ library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
 
-entity udp_add_ip_header is
+entity ip_add_header is
     Port ( clk                : in  STD_LOGIC;
 
            data_valid_in      : in  STD_LOGIC;
@@ -26,12 +45,13 @@ entity udp_add_ip_header is
            data_valid_out     : out STD_LOGIC := '0';
            data_out           : out STD_LOGIC_VECTOR (7 downto 0)  := (others => '0');
            
-           udp_data_length    : in  STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
-           ip_src_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
-           ip_dst_ip          : in  STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
-end udp_add_ip_header;
+           ip_data_length    : in STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
+           ip_protocol       : in STD_LOGIC_VECTOR ( 7 downto 0)  := (others => '0');
+           ip_src_ip         : in STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
+           ip_dst_ip         : in STD_LOGIC_VECTOR (31 downto 0)  := (others => '0'));           
+end ip_add_header;
 
-architecture Behavioral of udp_add_ip_header is
+architecture Behavioral of ip_add_header is
     type a_data_delay is array(0 to 20) of std_logic_vector(8 downto 0);
     signal data_delay      : a_data_delay := (others => (others => '0'));
     -------------------------------------------------------
@@ -47,7 +67,6 @@ architecture Behavioral of udp_add_ip_header is
     constant ip_flags           : STD_LOGIC_VECTOR ( 2 downto 0)  := (others => '0'); --zzz
     constant ip_fragment_offset : STD_LOGIC_VECTOR (12 downto 0)  := (others => '0'); --zzz
     constant ip_ttl             : STD_LOGIC_VECTOR ( 7 downto 0)  := x"FF";
-    constant ip_protocol        : STD_LOGIC_VECTOR ( 7 downto 0)  := x"11";
     signal   ip_length          : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
 
     signal ip_checksum_1a       : unsigned(19 downto 0)  := (others => '0');
@@ -66,7 +85,7 @@ architecture Behavioral of udp_add_ip_header is
     signal ip_word_8            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
     signal ip_word_9            : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
 begin
-    ip_length <= std_logic_vector(unsigned(udp_data_length)+28);
+    ip_length <= std_logic_vector(unsigned(ip_data_length)+20);
 
     ip_word_0 <= ip_version & ip_header_len & ip_type_of_service;
     ip_word_1 <= ip_length;
