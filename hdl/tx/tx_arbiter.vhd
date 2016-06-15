@@ -56,6 +56,11 @@ entity tx_arbiter is
            ch2_valid      : in  STD_LOGIC;
            ch2_data       : in  STD_LOGIC_VECTOR (7 downto 0);
     
+           ch3_request    : in  STD_LOGIC;
+           ch3_granted    : out STD_LOGIC;
+           ch3_valid      : in  STD_LOGIC;
+           ch3_data       : in  STD_LOGIC_VECTOR (7 downto 0);
+    
            merged_data_valid  : out STD_LOGIC;
            merged_data        : out STD_LOGIC_VECTOR (7 downto 0));
 end tx_arbiter;
@@ -73,9 +78,12 @@ begin
 
     request(2)  <= ch2_request;
     ch2_granted <= grant(2) and request(2);
+
+    request(3)  <= ch3_request;
+    ch3_granted <= grant(3) and request(3);
 	
-	merged_data_valid <= ch0_valid or ch1_valid or ch2_valid; 
-	merged_data       <= ch0_data  or ch1_data  or ch2_data; 
+	merged_data_valid <= ch0_valid or ch1_valid or ch2_valid or ch3_valid; 
+	merged_data       <= ch0_data  or ch1_data  or ch2_data  or ch3_data; 
 
 process(clk)
     begin  

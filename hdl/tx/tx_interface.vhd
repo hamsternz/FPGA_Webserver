@@ -61,6 +61,11 @@ entity tx_interface is
            udp_valid   : in  STD_LOGIC;
            udp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
            ---
+           tcp_request : in  STD_LOGIC;
+           tcp_granted : out STD_LOGIC;
+           tcp_valid   : in  STD_LOGIC;
+           tcp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
+           ---
            eth_txck    : out STD_LOGIC;
            eth_txctl   : out STD_LOGIC;
            eth_txd     : out STD_LOGIC_VECTOR (3 downto 0));
@@ -87,6 +92,11 @@ architecture Behavioral of tx_interface is
            ch2_granted       : out STD_LOGIC;
            ch2_valid         : in  STD_LOGIC;
            ch2_data          : in  STD_LOGIC_VECTOR (7 downto 0);
+
+           ch3_request       : in  STD_LOGIC;
+           ch3_granted       : out STD_LOGIC;
+           ch3_valid         : in  STD_LOGIC;
+           ch3_data          : in  STD_LOGIC_VECTOR (7 downto 0);
 
            merged_data_valid : out STD_LOGIC;
            merged_data       : out STD_LOGIC_VECTOR (7 downto 0));
@@ -142,20 +152,25 @@ i_tx_arbiter: tx_arbiter generic map(idle_time => "010111") Port map (
     ------------------------------
     ready             => phy_ready,
     
-    ch0_request       => arp_request,
-    ch0_granted       => arp_granted,
-    ch0_data          => arp_data,
-    ch0_valid         => arp_valid,
+    ch0_request       => tcp_request,
+    ch0_granted       => tcp_granted,
+    ch0_data          => tcp_data,
+    ch0_valid         => tcp_valid,
+
+    ch1_request       => arp_request,
+    ch1_granted       => arp_granted,
+    ch1_data          => arp_data,
+    ch1_valid         => arp_valid,
     
-    ch1_request       => icmp_request,
-    ch1_granted       => icmp_granted,
-    ch1_data          => icmp_data,
-    ch1_valid         => icmp_valid,
+    ch2_request       => icmp_request,
+    ch2_granted       => icmp_granted,
+    ch2_data          => icmp_data,
+    ch2_valid         => icmp_valid,
     
-    ch2_request       => udp_request,
-    ch2_granted       => udp_granted,
-    ch2_data          => udp_data,
-    ch2_valid         => udp_valid,
+    ch3_request       => udp_request,
+    ch3_granted       => udp_granted,
+    ch3_data          => udp_data,
+    ch3_valid         => udp_valid,
     
     merged_data_valid => merged_data_valid,
     merged_data       => merged_data);

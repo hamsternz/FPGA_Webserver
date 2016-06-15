@@ -70,6 +70,47 @@ entity main_design is
        udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
        udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
 
+            -- data received over TCP/IP
+       tcp_rx_data_valid    : out std_logic := '0';
+       tcp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+       
+       tcp_rx_hdr_valid     : out std_logic := '0';
+       tcp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+       tcp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+       tcp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');    
+       tcp_rx_seq_num       : out std_logic_vector(31 downto 0) := (others => '0');
+       tcp_rx_ack_num       : out std_logic_vector(31 downto 0) := (others => '0');
+       tcp_rx_window        : out std_logic_vector(15 downto 0) := (others => '0');
+       tcp_rx_checksum      : out std_logic_vector(15 downto 0) := (others => '0');
+       tcp_rx_flag_urg      : out std_logic := '0';
+       tcp_rx_flag_ack      : out std_logic := '0';
+       tcp_rx_flag_psh      : out std_logic := '0';
+       tcp_rx_flag_rst      : out std_logic := '0';
+       tcp_rx_flag_syn      : out std_logic := '0';
+       tcp_rx_flag_fin      : out std_logic := '0';
+       tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
+       
+       -- data to be sent over TCP/IP
+       tcp_tx_data_valid    : in  std_logic := '0';
+       tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+       
+       tcp_tx_hdr_valid     : in std_logic := '0';
+       tcp_tx_src_port      : in std_logic_vector(15 downto 0) := (others => '0');
+       tcp_tx_dst_mac       : in std_logic_vector(47 downto 0) := (others => '0');
+       tcp_tx_dst_ip        : in std_logic_vector(31 downto 0) := (others => '0');
+       tcp_tx_dst_port      : in std_logic_vector(15 downto 0) := (others => '0');    
+       tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
+       tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
+       tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
+       tcp_tx_checksum      : in std_logic_vector(15 downto 0) := (others => '0');
+       tcp_tx_flag_urg      : in std_logic := '0';
+       tcp_tx_flag_ack      : in std_logic := '0';
+       tcp_tx_flag_psh      : in std_logic := '0';
+       tcp_tx_flag_rst      : in std_logic := '0';
+       tcp_tx_flag_syn      : in std_logic := '0';
+       tcp_tx_flag_fin      : in std_logic := '0';
+       tcp_tx_urgent_ptr    : in std_logic_vector(15 downto 0) := (others => '0');
+
        eth_txck           : out std_logic := '0';
        eth_txctl          : out std_logic := '0';
        eth_txd            : out std_logic_vector(3 downto 0) := (others => '0'));
@@ -216,6 +257,69 @@ architecture Behavioral of main_design is
     signal packet_udp_valid     : std_logic;         
     signal packet_udp_data      : std_logic_vector(7 downto 0);         
 
+    component tcp_handler is 
+        generic (
+            our_mac       : std_logic_vector(47 downto 0) := (others => '0');
+            our_ip        : std_logic_vector(31 downto 0) := (others => '0');
+            our_broadcast : std_logic_vector(31 downto 0) := (others => '0'));
+        port (  clk                : in  STD_LOGIC;
+            -- For receiving data from the PHY        
+            packet_in_valid    : in  STD_LOGIC;
+            packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
+            
+            -- data received over TCP/IP
+            tcp_rx_data_valid    : out std_logic := '0';
+            tcp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+            
+            tcp_rx_hdr_valid     : out std_logic := '0';
+            tcp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+            tcp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+            tcp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');    
+            tcp_rx_seq_num       : out std_logic_vector(31 downto 0) := (others => '0');
+            tcp_rx_ack_num       : out std_logic_vector(31 downto 0) := (others => '0');
+            tcp_rx_window        : out std_logic_vector(15 downto 0) := (others => '0');
+            tcp_rx_checksum      : out std_logic_vector(15 downto 0) := (others => '0');
+            tcp_rx_flag_urg      : out std_logic := '0';
+            tcp_rx_flag_ack      : out std_logic := '0';
+            tcp_rx_flag_psh      : out std_logic := '0';
+            tcp_rx_flag_rst      : out std_logic := '0';
+            tcp_rx_flag_syn      : out std_logic := '0';
+            tcp_rx_flag_fin      : out std_logic := '0';
+            tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
+            
+            -- data to be sent over TCP/IP
+            tcp_tx_data_valid    : in  std_logic := '0';
+            tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+            
+            tcp_tx_hdr_valid     : in std_logic := '0';
+            tcp_tx_src_port      : in std_logic_vector(15 downto 0) := (others => '0');
+            tcp_tx_dst_mac       : in std_logic_vector(47 downto 0) := (others => '0');
+            tcp_tx_dst_ip        : in std_logic_vector(31 downto 0) := (others => '0');
+            tcp_tx_dst_port      : in std_logic_vector(15 downto 0) := (others => '0');    
+            tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
+            tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
+            tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
+            tcp_tx_checksum      : in std_logic_vector(15 downto 0) := (others => '0');
+            tcp_tx_flag_urg      : in std_logic := '0';
+            tcp_tx_flag_ack      : in std_logic := '0';
+            tcp_tx_flag_psh      : in std_logic := '0';
+            tcp_tx_flag_rst      : in std_logic := '0';
+            tcp_tx_flag_syn      : in std_logic := '0';
+            tcp_tx_flag_fin      : in std_logic := '0';
+            tcp_tx_urgent_ptr    : in std_logic_vector(15 downto 0) := (others => '0');
+            
+            -- For sending data to the PHY        
+            packet_out_request : out std_logic := '0';
+            packet_out_granted : in  std_logic;
+            packet_out_valid   : out std_logic := '0';         
+            packet_out_data    : out std_logic_vector(7 downto 0) := (others => '0'));
+    end component;
+    
+    signal packet_tcp_request   : std_logic;
+    signal packet_tcp_granted   : std_logic;
+    signal packet_tcp_valid     : std_logic;         
+    signal packet_tcp_data      : std_logic_vector(7 downto 0);         
+
     -------------------------------------------
     -- TX Interface
     -------------------------------------------
@@ -237,6 +341,11 @@ architecture Behavioral of main_design is
            icmp_granted : out STD_LOGIC;
            icmp_valid   : in  STD_LOGIC;
            icmp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
+           ---
+           tcp_request : in  STD_LOGIC;
+           tcp_granted : out STD_LOGIC;
+           tcp_valid   : in  STD_LOGIC;
+           tcp_data    : in  STD_LOGIC_VECTOR (7 downto 0);
            ---
            udp_request : in  STD_LOGIC;
            udp_granted : out STD_LOGIC;
@@ -330,7 +439,6 @@ i_icmp_handler: icmp_handler  generic map (
                 packet_out_valid   => packet_icmp_valid,          
                 packet_out_data    => packet_icmp_data);
 
-
 i_udp_handler: udp_handler 
     generic map (
         our_mac       => our_mac, 
@@ -366,6 +474,64 @@ i_udp_handler: udp_handler
         packet_out_valid   => packet_udp_valid,         
         packet_out_data    => packet_udp_data);
 
+i_tcp_handler: tcp_handler 
+    generic map (
+        our_mac       => our_mac, 
+        our_ip        => our_ip, 
+        our_broadcast => our_broadcast)
+    port map ( 
+        clk => clk125MHz,
+        -- For receiving data from the PHY        
+        packet_in_valid => packet_data_valid,
+        packet_in_data  => packet_data,
+
+        -- data received over TCP/IP
+        tcp_rx_data_valid    => tcp_rx_data_valid,
+        tcp_rx_data          => tcp_rx_data,
+        
+        tcp_rx_hdr_valid     => tcp_rx_hdr_valid,
+        tcp_rx_src_ip        => tcp_rx_src_ip,
+        tcp_rx_src_port      => tcp_rx_src_port,
+        tcp_rx_dst_port      => tcp_rx_dst_port,
+        tcp_rx_seq_num       => tcp_rx_seq_num,
+        tcp_rx_ack_num       => tcp_rx_ack_num,
+        tcp_rx_window        => tcp_rx_window,
+        tcp_rx_checksum      => tcp_rx_checksum,
+        tcp_rx_flag_urg      => tcp_rx_flag_urg, 
+        tcp_rx_flag_ack      => tcp_rx_flag_ack,
+        tcp_rx_flag_psh      => tcp_rx_flag_psh,
+        tcp_rx_flag_rst      => tcp_rx_flag_rst,
+        tcp_rx_flag_syn      => tcp_rx_flag_syn,
+        tcp_rx_flag_fin      => tcp_rx_flag_fin,
+        tcp_rx_urgent_ptr    => tcp_rx_urgent_ptr,
+        
+        -- data to be sent over TCP/IP
+        tcp_tx_data_valid    => tcp_tx_data_valid,
+        tcp_tx_data          => tcp_tx_data,
+        
+        tcp_tx_hdr_valid     => tcp_tx_hdr_valid, 
+        tcp_tx_src_port      => tcp_tx_src_port,
+        tcp_tx_dst_mac       => tcp_tx_dst_mac, 
+        tcp_tx_dst_ip        => tcp_tx_dst_ip,
+        tcp_tx_dst_port      => tcp_tx_dst_port,    
+        tcp_tx_seq_num       => tcp_tx_seq_num,
+        tcp_tx_ack_num       => tcp_tx_ack_num,
+        tcp_tx_window        => tcp_tx_window,
+        tcp_tx_checksum      => tcp_tx_checksum,
+        tcp_tx_flag_urg      => tcp_tx_flag_urg,
+        tcp_tx_flag_ack      => tcp_tx_flag_ack,
+        tcp_tx_flag_psh      => tcp_tx_flag_psh,
+        tcp_tx_flag_rst      => tcp_tx_flag_rst,
+        tcp_tx_flag_syn      => tcp_tx_flag_syn,
+        tcp_tx_flag_fin      => tcp_tx_flag_fin,
+        tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr,
+
+        -- For sending data to the PHY        
+        packet_out_request => packet_udp_request, 
+        packet_out_granted => packet_udp_granted,
+        packet_out_valid   => packet_udp_valid,         
+        packet_out_data    => packet_udp_data);
+
 i_tx_interface: tx_interface port map (
         clk125MHz   => clk125MHz, 
         clk125Mhz90 => clk125Mhz90,
@@ -379,6 +545,11 @@ i_tx_interface: tx_interface port map (
         arp_granted => packet_arp_granted, 
         arp_valid   => packet_arp_valid,
         arp_data    => packet_arp_data,
+        --- TCP channel
+        tcp_request => packet_tcp_request,
+        tcp_granted => packet_tcp_granted, 
+        tcp_valid   => packet_tcp_valid,
+        tcp_data    => packet_tcp_data,
         --- ICMP channel
         icmp_request => packet_icmp_request,
         icmp_granted => packet_icmp_granted, 

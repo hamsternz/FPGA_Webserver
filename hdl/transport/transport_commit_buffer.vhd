@@ -76,11 +76,10 @@ architecture Behavioral of transport_commit_buffer is
     signal read_pause : unsigned(5 downto 0) := to_unsigned(fcs_length + interpacket_gap + for_next_preamble-1,6);
 
     signal write_data   : std_logic_vector(8 downto 0);
-    signal read_data    : std_logic_vector(8 downto 0) := (others => '0');    
+    signal read_data    : std_logic_vector(8 downto 0);    
 begin
     with data_valid_in select write_data   <= data_valid_in & data_in when '1',  
                                               (others => '0') when others;
-    i_packet_out_valid <= read_data(8);
     i_packet_out_valid <= read_data(8);
     i_packet_out_data  <= read_data(7 downto 0);
     
