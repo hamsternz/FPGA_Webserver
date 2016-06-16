@@ -260,8 +260,7 @@ architecture Behavioral of main_design is
     component tcp_handler is 
         generic (
             our_mac       : std_logic_vector(47 downto 0) := (others => '0');
-            our_ip        : std_logic_vector(31 downto 0) := (others => '0');
-            our_broadcast : std_logic_vector(31 downto 0) := (others => '0'));
+            our_ip        : std_logic_vector(31 downto 0) := (others => '0'));
         port (  clk                : in  STD_LOGIC;
             -- For receiving data from the PHY        
             packet_in_valid    : in  STD_LOGIC;
@@ -477,8 +476,7 @@ i_udp_handler: udp_handler
 i_tcp_handler: tcp_handler 
     generic map (
         our_mac       => our_mac, 
-        our_ip        => our_ip, 
-        our_broadcast => our_broadcast)
+        our_ip        => our_ip)
     port map ( 
         clk => clk125MHz,
         -- For receiving data from the PHY        

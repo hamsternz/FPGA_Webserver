@@ -434,7 +434,7 @@ i_udp_test_sink: udp_test_sink port map (
 process(clk125Mhz)
     begin
         if tcp_rx_hdr_valid = '1' then
-            leds <= tcp_rx_src_port(7 downto 0);
+            leds <= tcp_rx_dst_port(7 downto 0);
         end if;
     end process;
 

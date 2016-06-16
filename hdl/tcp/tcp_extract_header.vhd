@@ -80,20 +80,20 @@ architecture Behavioral of tcp_extract_header is
 	signal data_count       : unsigned(10 downto 0) := (others => '0');
 	signal count            : unsigned( 4 downto 0) := (others => '0');
 begin
-    i_tcp_hdr_valid  <= i_tcp_hdr_valid;
-    i_tcp_src_port   <= i_tcp_src_port;
-    i_tcp_dst_port   <= i_tcp_dst_port;
-    i_tcp_seq_num    <= i_tcp_seq_num;
-    i_tcp_ack_num    <= i_tcp_ack_num;
-    i_tcp_window     <= i_tcp_window;
-    i_tcp_flag_urg   <= i_tcp_flag_urg;
-    i_tcp_flag_ack   <= i_tcp_flag_ack;
-    i_tcp_flag_psh   <= i_tcp_flag_psh;
-    i_tcp_flag_rst   <= i_tcp_flag_rst;
-    i_tcp_flag_syn   <= i_tcp_flag_syn;
-    i_tcp_flag_fin   <= i_tcp_flag_fin;
-    i_tcp_checksum   <= i_tcp_checksum;
-    i_tcp_urgent_ptr <= i_tcp_urgent_ptr;
+    tcp_hdr_valid  <= i_tcp_hdr_valid;
+    tcp_src_port   <= i_tcp_src_port;
+    tcp_dst_port   <= i_tcp_dst_port;
+    tcp_seq_num    <= i_tcp_seq_num;
+    tcp_ack_num    <= i_tcp_ack_num;
+    tcp_window     <= i_tcp_window;
+    tcp_flag_urg   <= i_tcp_flag_urg;
+    tcp_flag_ack   <= i_tcp_flag_ack;
+    tcp_flag_psh   <= i_tcp_flag_psh;
+    tcp_flag_rst   <= i_tcp_flag_rst;
+    tcp_flag_syn   <= i_tcp_flag_syn;
+    tcp_flag_fin   <= i_tcp_flag_fin;
+    tcp_checksum   <= i_tcp_checksum;
+    tcp_urgent_ptr <= i_tcp_urgent_ptr;
 process(clk)
     begin
         if rising_edge(clk) then
@@ -115,13 +115,13 @@ process(clk)
                     when "01001" => i_tcp_ack_num(23 downto 16)   <= data_in;
                     when "01010" => i_tcp_ack_num(15 downto  8)   <= data_in;
                     when "01011" => i_tcp_ack_num( 7 downto  0)   <= data_in;
-                    when "01100" => byte_hdr_len(5 downto 2)      <= unsigned(data_in( 3 downto  0));
-                    when "01101" => i_tcp_flag_urg <= data_in(2);
-                                    i_tcp_flag_ack <= data_in(3);
-                                    i_tcp_flag_psh <= data_in(4);
-                                    i_tcp_flag_rst <= data_in(5);
-                                    i_tcp_flag_syn <= data_in(6);
-                                    i_tcp_flag_fin <= data_in(7);
+                    when "01100" => byte_hdr_len(5 downto 2)      <= unsigned(data_in( 7 downto  4));
+                    when "01101" => i_tcp_flag_urg <= data_in(5);
+                                    i_tcp_flag_ack <= data_in(4);
+                                    i_tcp_flag_psh <= data_in(3);
+                                    i_tcp_flag_rst <= data_in(2);
+                                    i_tcp_flag_syn <= data_in(1);
+                                    i_tcp_flag_fin <= data_in(0);
                     when "01110" => i_tcp_window(15 downto 8)     <= data_in;
                     when "01111" => i_tcp_window( 7 downto 0)     <= data_in;
                     when "10000" => i_tcp_checksum(15 downto 8)   <= data_in;
@@ -144,6 +144,10 @@ process(clk)
                 end if;
                 data_count <= data_count + 1;
             else
+               -- For when TCP packets have no data
+               if data_count = byte_hdr_len then
+                   i_tcp_hdr_valid <= '1';
+               end if;
                data_valid_out <= '0';
                data_out       <= data_in;
                count <= (others => '0');
