@@ -68,7 +68,8 @@ architecture Behavioral of tb_tcp_engine_add_data is
 
     signal clk              : STD_LOGIC;
     signal read_en          : std_logic := '0';
-    signal empty            : std_logic := '0';
+    signal empty            : std_logic := '1';
+    signal count            : integer := 0;
         
     signal in_src_port      : std_logic_vector(15 downto 0) := (others => '0');
     signal in_dst_ip        : std_logic_vector(31 downto 0) := (others => '0');
@@ -104,12 +105,20 @@ architecture Behavioral of tb_tcp_engine_add_data is
     signal out_data          : std_logic_vector(7 downto 0) := (others => '0');
 begin
 
+process
+    begin
+        wait for 5 ns;
+        clk <= '1';
+        wait for 5 ns;
+        clk <= '0';
+    end process;
+
 clk_proc: process(clk)
     begin
         if rising_edge(clk) then
-            if count = 99 then
+            if count = 49 then
                 empty <= '0';
-                count <= (others => '0');
+                count <= 0;
             else
                 count <= count + 1;
             end if;
@@ -117,6 +126,8 @@ clk_proc: process(clk)
             if read_en = '1' and empty = '0' then              
                 in_src_port <= std_logic_vector(unsigned(in_src_port)+1);
                 in_dst_port <= std_logic_vector(unsigned(in_dst_port)+1);
+                in_data_len <= "00000010000";
+                empty <= '1';
             end if; 
         end if;
     end process;

@@ -97,7 +97,7 @@ process(clk)
             data_left_to_go <= data_left_to_go-1;
             case state is
                 when waiting     =>
-                    if empty = '1' then
+                    if empty = '0' then
                         read_en <= '1';
                         state <= reading;
                      end if;
@@ -133,10 +133,8 @@ process(clk)
                     state        <= waiting;
             end case;
         end if;
-        
-        -- Can't be bothered coding a memory at the moment
-        out_data <= std_logic_vector(address(7 downto 0));
     end process;
+
 i_tcp_engine_content_memory: tcp_engine_content_memory port map (
     clk => clk,
     address => address,
