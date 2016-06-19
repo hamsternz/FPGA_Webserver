@@ -509,7 +509,7 @@ i_tcp_handler: tcp_handler
         
         tcp_tx_hdr_valid     => tcp_tx_hdr_valid, 
         tcp_tx_src_port      => tcp_tx_src_port,
-        tcp_tx_dst_mac       => tcp_tx_dst_mac, 
+        tcp_tx_dst_mac       => x"0123DEADBEEF", 
         tcp_tx_dst_ip        => tcp_tx_dst_ip,
         tcp_tx_dst_port      => tcp_tx_dst_port,    
         tcp_tx_seq_num       => tcp_tx_seq_num,

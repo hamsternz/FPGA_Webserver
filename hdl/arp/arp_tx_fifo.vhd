@@ -51,59 +51,35 @@ entity arp_tx_fifo is
 end arp_tx_fifo;
 
 architecture Behavioral of arp_tx_fifo is
-   signal i_full  : std_logic := '0';
-   signal i_empty : std_logic := '0';
-   
-   type mem_array is array(31 downto 0) of std_logic_vector(80 downto 0);
-   signal memory : mem_array;
-   
-   signal wr_ptr : unsigned(4 downto 0) := (others => '0');
-   signal rd_ptr : unsigned(4 downto 0) := (others => '0');
-   
+   component fifo_32 is
+   port (
+       clk      : in  std_logic;
+       
+       full     : out std_logic;
+       write_en : in  std_logic;
+       data_in  : in  std_logic_vector;
+       
+       empty    : out std_logic;
+       read_en  : in  std_logic; 
+       data_out : out  std_logic_vector);
+   end component;
+
+   signal data_in  : std_logic_vector(80 downto 0) := (others => '0');
+   signal data_out : std_logic_vector(80 downto 0) := (others => '0');
 begin
-    arp_in_full   <= i_full;
-    arp_out_empty <= i_empty;
+    arp_out_op_request <= data_out(80);
+    arp_out_tgt_hw     <= data_out(79 downto 32);
+    arp_out_tgt_ip     <= data_out(31 downto 0);
+    
+    data_in <= arp_in_op_request & arp_in_tgt_hw & arp_in_tgt_ip;
 
-flag_proc: process(wr_ptr, rd_ptr)
-    begin
-        if wr_ptr = rd_ptr then
-            i_empty <= '1';
-        else
-            i_empty <= '0';
-        end if;
-
-        if wr_ptr+1 = rd_ptr then
-            i_full <= '1';
-        else
-            i_full <= '0';
-        end if;
-    end process;
-
-clk_proc: process(clk)
-    begin
-        if rising_edge(clk) then
-            if arp_out_read = '1' then
-                if arp_in_write = '1' then
-                    if i_empty = '0' then
-                        arp_out_op_request <= memory(to_integer(rd_ptr))(80);
-                        arp_out_tgt_hw     <= memory(to_integer(rd_ptr))(79 downto 32);
-                        arp_out_tgt_ip     <= memory(to_integer(rd_ptr))(31 downto 0);
-                        rd_ptr <= rd_ptr + 1;
-                    end if;
-                    memory(to_integer(wr_ptr)) <= arp_in_op_request & arp_in_tgt_hw & arp_in_tgt_ip;
-                    wr_ptr <= wr_ptr + 1;
-                elsif i_empty = '0' then
-                    arp_out_op_request <= memory(to_integer(rd_ptr))(80);
-                    arp_out_tgt_hw     <= memory(to_integer(rd_ptr))(79 downto 32);
-                    arp_out_tgt_ip     <= memory(to_integer(rd_ptr))(31 downto 0);
-                    rd_ptr <= rd_ptr + 1;
-                end if;
-            elsif arp_in_write = '1' then
-                if i_full = '0' then
-                    memory(to_integer(wr_ptr)) <= arp_in_op_request & arp_in_tgt_hw & arp_in_tgt_ip;
-                    wr_ptr <= wr_ptr + 1;
-                end if;           
-            end if;
-        end if;
-    end process;
+i_generic_fifo: fifo_32
+    port map (
+        clk      => clk,
+        full     => arp_in_full,
+        write_en => arp_in_write,
+        data_in  => data_in,
+        empty    => arp_out_empty,
+        read_en  => arp_out_read, 
+        data_out => data_out);
 end Behavioral;
