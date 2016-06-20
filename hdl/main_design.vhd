@@ -91,6 +91,8 @@ entity main_design is
        tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
        
        -- data to be sent over TCP/IP
+       tcp_tx_busy          : out std_logic := '0';
+
        tcp_tx_data_valid    : in  std_logic := '0';
        tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
        
@@ -262,6 +264,7 @@ architecture Behavioral of main_design is
             our_mac       : std_logic_vector(47 downto 0) := (others => '0');
             our_ip        : std_logic_vector(31 downto 0) := (others => '0'));
         port (  clk                : in  STD_LOGIC;
+            
             -- For receiving data from the PHY        
             packet_in_valid    : in  STD_LOGIC;
             packet_in_data     : in  STD_LOGIC_VECTOR (7 downto 0);
@@ -287,6 +290,8 @@ architecture Behavioral of main_design is
             tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
             
             -- data to be sent over TCP/IP
+            tcp_tx_busy          : out std_logic := '0';
+
             tcp_tx_data_valid    : in  std_logic := '0';
             tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
             
@@ -298,7 +303,6 @@ architecture Behavioral of main_design is
             tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
             tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
             tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
-            tcp_tx_checksum      : in std_logic_vector(15 downto 0) := (others => '0');
             tcp_tx_flag_urg      : in std_logic := '0';
             tcp_tx_flag_ack      : in std_logic := '0';
             tcp_tx_flag_psh      : in std_logic := '0';
@@ -504,6 +508,7 @@ i_tcp_handler: tcp_handler
         tcp_rx_urgent_ptr    => tcp_rx_urgent_ptr,
         
         -- data to be sent over TCP/IP
+        tcp_tx_busy          => tcp_tx_busy,
         tcp_tx_data_valid    => tcp_tx_data_valid,
         tcp_tx_data          => tcp_tx_data,
         
@@ -515,7 +520,6 @@ i_tcp_handler: tcp_handler
         tcp_tx_seq_num       => tcp_tx_seq_num,
         tcp_tx_ack_num       => tcp_tx_ack_num,
         tcp_tx_window        => tcp_tx_window,
-        tcp_tx_checksum      => tcp_tx_checksum,
         tcp_tx_flag_urg      => tcp_tx_flag_urg,
         tcp_tx_flag_ack      => tcp_tx_flag_ack,
         tcp_tx_flag_psh      => tcp_tx_flag_psh,

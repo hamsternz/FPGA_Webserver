@@ -66,6 +66,8 @@ entity tcp_handler is
             tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
 
   	        -- data to be sent over UDP
+            tcp_tx_busy          : out std_logic := '0';
+
             tcp_tx_data_valid    : in  std_logic := '0';
             tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
               
@@ -77,7 +79,6 @@ entity tcp_handler is
             tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
             tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
             tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
-            tcp_tx_checksum      : in std_logic_vector(15 downto 0) := (others => '0');
             tcp_tx_flag_urg      : in std_logic := '0';
             tcp_tx_flag_ack      : in std_logic := '0';
             tcp_tx_flag_psh      : in std_logic := '0';
@@ -133,6 +134,8 @@ architecture Behavioral of tcp_handler is
         our_mac     : std_logic_vector(47 downto 0) := (others => '0'));
     port(
         clk                  : in  STD_LOGIC;
+        tcp_tx_busy          : out std_logic;
+
         tcp_tx_data_valid    : in  std_logic := '0';
         tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
         
@@ -144,7 +147,6 @@ architecture Behavioral of tcp_handler is
         tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
         tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
         tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
-        tcp_tx_checksum      : in std_logic_vector(15 downto 0) := (others => '0');
         tcp_tx_flag_urg      : in std_logic := '0';
         tcp_tx_flag_ack      : in std_logic := '0';
         tcp_tx_flag_psh      : in std_logic := '0';
@@ -198,33 +200,32 @@ i_tcp_rx_packet: tcp_rx_packet generic map (
     --==============================================
     -- Start of TCP TX processing
     --==============================================
---i_tcp_tx_packet : tcp_tx_packet generic map (
---        our_ip  => our_ip,
---        our_mac => our_mac
---    ) port map (    
---        clk                  => clk,
---    
---        tcp_tx_hdr_valid     => tcp_tx_hdr_valid,
---        tcp_tx_dst_mac        => tcp_tx_dst_mac,
---        tcp_tx_dst_ip        => tcp_tx_dst_ip,
---        tcp_tx_src_port      => tcp_tx_src_port,
---        tcp_tx_dst_port      => tcp_tx_dst_port,
---        tcp_tx_seq_num       => tcp_tx_seq_num,
---        tcp_tx_ack_num       => tcp_tx_ack_num,
---        tcp_tx_window        => tcp_tx_window,
---        tcp_tx_checksum      => tcp_tx_checksum,
---        tcp_tx_flag_urg      => tcp_tx_flag_urg,
---        tcp_tx_flag_ack      => tcp_tx_flag_ack,
---        tcp_tx_flag_psh      => tcp_tx_flag_psh,
---        tcp_tx_flag_rst      => tcp_tx_flag_rst,
---        tcp_tx_flag_syn      => tcp_tx_flag_syn,
---        tcp_tx_flag_fin      => tcp_tx_flag_fin,
---        tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr,
---    
---        packet_out_request   => packet_out_request, 
---        packet_out_granted   => packet_out_granted,
---        packet_out_valid     => packet_out_valid,         
---        packet_out_data      => packet_out_data);
+i_tcp_tx_packet : tcp_tx_packet generic map (
+        our_ip  => our_ip,
+        our_mac => our_mac
+    ) port map (    
+        clk                  => clk,
+        tcp_tx_busy          => tcp_tx_busy,     
+        tcp_tx_hdr_valid     => tcp_tx_hdr_valid,
+        tcp_tx_dst_mac       => tcp_tx_dst_mac,
+        tcp_tx_dst_ip        => tcp_tx_dst_ip,
+        tcp_tx_src_port      => tcp_tx_src_port,
+        tcp_tx_dst_port      => tcp_tx_dst_port,
+        tcp_tx_seq_num       => tcp_tx_seq_num,
+        tcp_tx_ack_num       => tcp_tx_ack_num,
+        tcp_tx_window        => tcp_tx_window,
+        tcp_tx_flag_urg      => tcp_tx_flag_urg,
+        tcp_tx_flag_ack      => tcp_tx_flag_ack,
+        tcp_tx_flag_psh      => tcp_tx_flag_psh,
+        tcp_tx_flag_rst      => tcp_tx_flag_rst,
+        tcp_tx_flag_syn      => tcp_tx_flag_syn,
+        tcp_tx_flag_fin      => tcp_tx_flag_fin,
+        tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr,
+    
+        packet_out_request   => packet_out_request, 
+        packet_out_granted   => packet_out_granted,
+        packet_out_valid     => packet_out_valid,         
+        packet_out_data      => packet_out_data);
     --==============================================
     -- End of TCP TX processing
     --==============================================

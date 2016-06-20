@@ -178,6 +178,8 @@ architecture Behavioral of FPGA_webserver is
            tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
            
            -- data to be sent over TCP/IP
+           tcp_tx_busy          : out std_logic;
+           
            tcp_tx_data_valid    : in  std_logic := '0';
            tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
             
@@ -268,6 +270,7 @@ architecture Behavioral of FPGA_webserver is
     signal tcp_rx_urgent_ptr    : std_logic_vector(15 downto 0) := (others => '0');
             
             -- data to be sent over TCP/IP
+    signal tcp_tx_busy          : std_logic := '0';
     signal tcp_tx_data_valid    : std_logic := '0';
     signal tcp_tx_data          : std_logic_vector(7 downto 0) := (others => '0');
             
@@ -311,6 +314,8 @@ architecture Behavioral of FPGA_webserver is
             tcp_rx_urgent_ptr    : in  std_logic_vector(15 downto 0) := (others => '0');
 
   	        -- data to be sent over UDP
+            tcp_tx_busy          : in  std_logic := '0';
+            
             tcp_tx_data_valid    : out std_logic := '0';
             tcp_tx_data          : out std_logic_vector(7 downto 0) := (others => '0');
               
@@ -402,6 +407,8 @@ i_main_design: main_design generic map (
     udp_tx_dst_port      => udp_tx_dst_port,
  
         -- data received over TCP/IP
+    tcp_tx_busy          => tcp_tx_busy,
+     
     tcp_rx_data_valid    => tcp_rx_data_valid,
     tcp_rx_data          => tcp_rx_data,
     
@@ -500,6 +507,8 @@ i_tcp_engine: tcp_engine port map (
         tcp_rx_urgent_ptr    => tcp_rx_urgent_ptr,
         
         -- data to be sent over TCP/IP
+        tcp_tx_busy          => tcp_tx_busy,
+
         tcp_tx_data_valid    => tcp_tx_data_valid,
         tcp_tx_data          => tcp_tx_data,
         

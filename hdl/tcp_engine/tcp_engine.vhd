@@ -58,6 +58,7 @@ entity tcp_engine is
             tcp_rx_urgent_ptr    : in  std_logic_vector(15 downto 0) := (others => '0');
 
   	        -- data to be sent over TP
+            tcp_tx_busy          : in  std_logic := '0';
             tcp_tx_data_valid    : out std_logic := '0';
             tcp_tx_data          : out std_logic_vector(7 downto 0) := (others => '0');
               
