@@ -82,7 +82,7 @@ infer_dp_mem_process: process(clk)
                 write_enable     := '1';
                 wrote_valid_data <= '1';
             elsif hdr_valid_in = '1' then
-                write_data       := '0'& x"00";
+                write_data       := '1'& x"00";
                 write_enable     := '1';            
                 wrote_valid_data <= '0';
             elsif data_count < min_length-4 then  -- Minimum UDP datasize to make minimum ethernet frame
@@ -107,9 +107,10 @@ main_proc: process(clk)
     variable v_checksum : unsigned(16 downto 0) := (others => '0');
     begin
         if rising_edge(clk) then
-            if data_valid_in = '1' or data_valid_in_last = '1' or data_count < min_length-3 then
+            if data_valid_in = '1' or hdr_valid_in = '1' or data_valid_in_last = '1' or data_count < min_length-3 then
                 write_ptr <= write_ptr + 1; 
             end if;
+
 
             if data_valid_in = '1' then
                 if data_valid_in_last = '0' then
@@ -117,6 +118,15 @@ main_proc: process(clk)
                 else
                     data_count <= data_count + 1;
                 end if;
+            elsif hdr_valid_in = '1' then
+                -----------------------------------------------------
+                --For when there is no data to be sent, just a packet
+                -----------------------------------------------------
+                data_count <= to_unsigned(1,11);
+            end if;
+            
+            
+            if data_valid_in = '1' then
                 --- Update the checksum here
                 if data_count(0) = '0' then
                     checksum <= to_unsigned(0,17) + checksum(15 downto 0) + checksum(16 downto 16) + (unsigned(data_in) & to_unsigned(0,8));

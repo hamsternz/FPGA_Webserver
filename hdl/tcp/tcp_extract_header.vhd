@@ -145,7 +145,7 @@ process(clk)
                 data_count <= data_count + 1;
             else
                -- For when TCP packets have no data
-               if data_count = byte_hdr_len then
+               if data_count = byte_hdr_len and byte_hdr_len /= 0 then
                    i_tcp_hdr_valid <= '1';
                end if;
                data_valid_out <= '0';

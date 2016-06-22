@@ -255,7 +255,7 @@ i_tcp_add_header: tcp_add_header port map (
         tcp_flag_fin   => tcp_tx_flag_fin,
         tcp_urgent_ptr => tcp_tx_urgent_ptr);
 
-    ip_data_length <= std_logic_vector(unsigned(data_length)+8);
+    ip_data_length <= std_logic_vector(unsigned(data_length)+20);
 i_ip_add_header: ip_add_header port map (
         clk             => clk,
         data_valid_in   => pre_ip_valid,

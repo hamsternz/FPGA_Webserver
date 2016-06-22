@@ -107,16 +107,16 @@ begin
     pseudohdr_01 <= ip_src_ip(23 downto 16) & ip_src_ip(31 downto 24);
     pseudohdr_02 <= ip_dst_ip( 7 downto  0) & ip_dst_ip(15 downto  8);
     pseudohdr_03 <= ip_dst_ip(23 downto 16) & ip_dst_ip(31 downto 24);
-    pseudohdr_04 <= x"0110";  -- TCP Protocol
+    pseudohdr_04 <= x"0006";  -- TCP Protocol
     pseudohdr_05 <= tcp_length; 
     
     pseudohdr_06 <= tcp_src_port; 
     pseudohdr_07 <= tcp_dst_port; 
 
-    pseudohdr_08 <= tcp_seq_num(15 downto  0);
-    pseudohdr_09 <= tcp_seq_num(31 downto 16);
-    pseudohdr_10 <= tcp_ack_num(15 downto  0);
-    pseudohdr_11 <= tcp_ack_num(31 downto 16);
+    pseudohdr_08 <= tcp_seq_num(31 downto 16);
+    pseudohdr_09 <= tcp_seq_num(15 downto  0);
+    pseudohdr_10 <= tcp_ack_num(31 downto 16);
+    pseudohdr_11 <= tcp_ack_num(15 downto  0);
 
     pseudohdr_12 <= "01010000" & "00"  
                     & tcp_flag_urg & tcp_flag_ack
@@ -161,12 +161,12 @@ process(clk)
                 data_delay(data_delay'high) <= '1' & data_in;
                 if data_valid_in_last = '0' then
                     count <= (others => '0');
-                elsif count /= "1111" then
+                elsif count /= "11111" then
                     count <= count + 1;
                 end if;
             else
                 data_delay(data_delay'high) <= (others => '0');
-                if count /= "1111" then
+                if count /= "11111" then
                     count <= count + 1;
                 end if;
             end if;     

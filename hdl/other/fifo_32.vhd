@@ -39,29 +39,31 @@ entity fifo_32 is
     port (
         clk      : in  std_logic;
     
-        full     : out std_logic;
-        write_en : in  std_logic;
-        data_in  : in  std_logic_vector;
+        full     : out std_logic := '0';
+        write_en : in  std_logic := '0';
+        data_in  : in  std_logic_vector := (others => '1');
         
-        empty    : out std_logic;
-        read_en  : in  std_logic; 
-        data_out : out  std_logic_vector);
+        data_out : out  std_logic_vector := (others => '1');
+        empty    : out std_logic := '0';
+        read_en  : in  std_logic := '0'
+        );
 end fifo_32;
 
 architecture Behavioral of fifo_32 is
    signal i_full  : std_logic := '0';
-   signal i_empty : std_logic := '0';
+   signal i_empty : std_logic := '1';
    
    type mem_array is array(31 downto 0) of std_logic_vector(data_in'high downto 0);
-   signal memory : mem_array;
+   signal memory : mem_array := (others => (others => '0'));
    
    signal wr_ptr : unsigned(4 downto 0) := (others => '0');
    signal rd_ptr : unsigned(4 downto 0) := (others => '0');
+   signal i_data_out : std_logic_vector(data_in'high downto 0) := (others => '0');
    
 begin
     full   <= i_full;
     empty <= i_empty;
-
+    data_out <= i_data_out;
 flag_proc: process(wr_ptr, rd_ptr)
     begin
         if wr_ptr = rd_ptr then
@@ -83,13 +85,13 @@ clk_proc: process(clk)
             if read_en = '1' then
                 if write_en = '1' then
                     if i_empty = '0' then
-                        data_out <= memory(to_integer(rd_ptr));
+                        i_data_out <= memory(to_integer(rd_ptr));
                         rd_ptr <= rd_ptr + 1;
                     end if;
                     memory(to_integer(wr_ptr)) <= data_in;
                     wr_ptr <= wr_ptr + 1;
                 elsif i_empty = '0' then
-                    data_out <= memory(to_integer(rd_ptr));
+                    i_data_out <= memory(to_integer(rd_ptr));
                     rd_ptr <= rd_ptr + 1;
                 end if;
             elsif write_en = '1' then

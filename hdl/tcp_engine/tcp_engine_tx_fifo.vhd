@@ -79,13 +79,13 @@ architecture Behavioral of tcp_engine_tx_fifo is
     port (
         clk      : in  std_logic;
         
-        full     : out std_logic;
+        full     : out std_logic := '0';
         write_en : in  std_logic;
         data_in  : in  std_logic_vector;
         
-        empty    : out std_logic;
+        empty    : out std_logic := '0';
         read_en  : in  std_logic; 
-        data_out : out  std_logic_vector);
+        data_out : out  std_logic_vector := (others => '0'));
     end component;
 
     signal data_in  : std_logic_vector(192 downto 0) := (others => '0');

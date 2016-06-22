@@ -514,7 +514,7 @@ i_tcp_handler: tcp_handler
         
         tcp_tx_hdr_valid     => tcp_tx_hdr_valid, 
         tcp_tx_src_port      => tcp_tx_src_port,
-        tcp_tx_dst_mac       => x"0123DEADBEEF", 
+        tcp_tx_dst_mac       => x"EF_F9_4C_CC_B3_A0", 
         tcp_tx_dst_ip        => tcp_tx_dst_ip,
         tcp_tx_dst_port      => tcp_tx_dst_port,    
         tcp_tx_seq_num       => tcp_tx_seq_num,
@@ -529,10 +529,10 @@ i_tcp_handler: tcp_handler
         tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr,
 
         -- For sending data to the PHY        
-        packet_out_request => packet_udp_request, 
-        packet_out_granted => packet_udp_granted,
-        packet_out_valid   => packet_udp_valid,         
-        packet_out_data    => packet_udp_data);
+        packet_out_request => packet_tcp_request, 
+        packet_out_granted => packet_tcp_granted,
+        packet_out_valid   => packet_tcp_valid,         
+        packet_out_data    => packet_tcp_data);
 
 i_tx_interface: tx_interface port map (
         clk125MHz   => clk125MHz, 

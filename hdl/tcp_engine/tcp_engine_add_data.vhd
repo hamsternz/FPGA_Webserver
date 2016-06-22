@@ -104,6 +104,19 @@ process(clk)
                 when reading     =>
                      state <= new_packet;
                 when new_packet  =>
+                     out_src_port      <= in_src_port;
+                     out_dst_ip        <= in_dst_ip; 
+                     out_dst_port      <= in_dst_port;    
+                     out_seq_num       <= in_seq_num;
+                     out_ack_num       <= in_ack_num;
+                     out_window        <= in_window;
+                     out_flag_urg      <= in_flag_urg;
+                     out_flag_ack      <= in_flag_ack;
+                     out_flag_psh      <= in_flag_psh;
+                     out_flag_rst      <= in_flag_rst;
+                     out_flag_syn      <= in_flag_syn;
+                     out_flag_fin      <= in_flag_fin;
+                     out_urgent_ptr    <= in_urgent_ptr;    
                      if unsigned(in_data_len) = 0 then
                         state <= no_data;
                      else

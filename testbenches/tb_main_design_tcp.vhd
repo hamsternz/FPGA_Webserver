@@ -43,21 +43,137 @@ architecture Behavioral of tb_main_design_tcp is
         our_netmask   : std_logic_vector(31 downto 0) := (others => '0');
         our_ip        : std_logic_vector(31 downto 0) := (others => '0'));
     Port ( 
-       clk125Mhz          : in  STD_LOGIC;
-       clk125Mhz90        : in  STD_LOGIC;
-       input_empty        : in  STD_LOGIC;           
-       input_read         : out STD_LOGIC;           
-       input_data         : in  STD_LOGIC_VECTOR (7 downto 0);
-       input_data_present : in  STD_LOGIC;
-       input_data_error   : in  STD_LOGIC;
-
-       phy_ready          : in  STD_LOGIC;
-       status             : out STD_LOGIC_VECTOR (3 downto 0);
-       
-       eth_txck           : out std_logic := '0';
-       eth_txctl          : out std_logic := '0';
-       eth_txd            : out std_logic_vector(3 downto 0) := (others => '0'));
+           clk125Mhz          : in  STD_LOGIC;
+           clk125Mhz90        : in  STD_LOGIC;
+           input_empty        : in  STD_LOGIC;           
+           input_read         : out STD_LOGIC;           
+           input_data         : in  STD_LOGIC_VECTOR (7 downto 0);
+           input_data_present : in  STD_LOGIC;
+           input_data_error   : in  STD_LOGIC;
+    
+           phy_ready          : in  STD_LOGIC;
+           status             : out STD_LOGIC_VECTOR (3 downto 0);
+    
+           -- data received over UDP
+           udp_rx_valid         : out std_logic := '0';
+           udp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+           udp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+           udp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+           udp_rx_dst_broadcast : out std_logic := '0';
+           udp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');
+            
+           -- data to be sent over UDP
+           udp_tx_busy          : out std_logic := '1';
+           udp_tx_valid         : in  std_logic := '0';
+           udp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+           udp_tx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+           udp_tx_dst_mac       : in  std_logic_vector(47 downto 0) := (others => '0');
+           udp_tx_dst_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
+           udp_tx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+    
+                -- data received over TCP/IP
+           tcp_rx_data_valid    : out std_logic := '0';
+           tcp_rx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+           
+           tcp_rx_hdr_valid     : out std_logic := '0';
+           tcp_rx_src_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+           tcp_rx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+           tcp_rx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');    
+           tcp_rx_seq_num       : out std_logic_vector(31 downto 0) := (others => '0');
+           tcp_rx_ack_num       : out std_logic_vector(31 downto 0) := (others => '0');
+           tcp_rx_window        : out std_logic_vector(15 downto 0) := (others => '0');
+           tcp_rx_checksum      : out std_logic_vector(15 downto 0) := (others => '0');
+           tcp_rx_flag_urg      : out std_logic := '0';
+           tcp_rx_flag_ack      : out std_logic := '0';
+           tcp_rx_flag_psh      : out std_logic := '0';
+           tcp_rx_flag_rst      : out std_logic := '0';
+           tcp_rx_flag_syn      : out std_logic := '0';
+           tcp_rx_flag_fin      : out std_logic := '0';
+           tcp_rx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0');
+           
+           -- data to be sent over TCP/IP
+           tcp_tx_busy          : out std_logic := '0';
+    
+           tcp_tx_data_valid    : in  std_logic := '0';
+           tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+           
+           tcp_tx_hdr_valid     : in std_logic := '0';
+           tcp_tx_src_port      : in std_logic_vector(15 downto 0) := (others => '0');
+           tcp_tx_dst_mac       : in std_logic_vector(47 downto 0) := (others => '0');
+           tcp_tx_dst_ip        : in std_logic_vector(31 downto 0) := (others => '0');
+           tcp_tx_dst_port      : in std_logic_vector(15 downto 0) := (others => '0');    
+           tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
+           tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
+           tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
+           tcp_tx_checksum      : in std_logic_vector(15 downto 0) := (others => '0');
+           tcp_tx_flag_urg      : in std_logic := '0';
+           tcp_tx_flag_ack      : in std_logic := '0';
+           tcp_tx_flag_psh      : in std_logic := '0';
+           tcp_tx_flag_rst      : in std_logic := '0';
+           tcp_tx_flag_syn      : in std_logic := '0';
+           tcp_tx_flag_fin      : in std_logic := '0';
+           tcp_tx_urgent_ptr    : in std_logic_vector(15 downto 0) := (others => '0');
+    
+           eth_txck           : out std_logic := '0';
+           eth_txctl          : out std_logic := '0';
+           eth_txd            : out std_logic_vector(3 downto 0) := (others => '0'));
     end component;
+
+    signal udp_rx_valid         : std_logic := '0';
+    signal udp_rx_data          : std_logic_vector(7 downto 0) := (others => '0');
+    signal udp_rx_src_ip        : std_logic_vector(31 downto 0) := (others => '0');
+    signal udp_rx_src_port      : std_logic_vector(15 downto 0) := (others => '0');
+    signal udp_rx_dst_broadcast : std_logic := '0';
+    signal udp_rx_dst_port      : std_logic_vector(15 downto 0) := (others => '0');
+    signal udp_rx_valid_last    : std_logic := '0';
+
+    signal udp_tx_busy          : std_logic := '0';
+    signal udp_tx_valid         : std_logic := '0';
+    signal udp_tx_data          : std_logic_vector(7 downto 0) := (others => '0');
+    signal udp_tx_src_port      : std_logic_vector(15 downto 0) := (others => '0');
+    signal udp_tx_dst_mac       : std_logic_vector(47 downto 0) := (others => '0');
+    signal udp_tx_dst_ip        : std_logic_vector(31 downto 0) := (others => '0');
+    signal udp_tx_dst_port      : std_logic_vector(15 downto 0) := (others => '0');
+            -- data received over TCP/IP
+    signal tcp_rx_data_valid    : std_logic := '0';
+    signal tcp_rx_data          : std_logic_vector(7 downto 0) := (others => '0');
+        
+    signal tcp_rx_hdr_valid     : std_logic := '0';
+    signal tcp_rx_src_ip        : std_logic_vector(31 downto 0) := (others => '0');
+    signal tcp_rx_src_port      : std_logic_vector(15 downto 0) := (others => '0');
+    signal tcp_rx_dst_port      : std_logic_vector(15 downto 0) := (others => '0');    
+    signal tcp_rx_seq_num       : std_logic_vector(31 downto 0) := (others => '0');
+    signal tcp_rx_ack_num       : std_logic_vector(31 downto 0) := (others => '0');
+    signal tcp_rx_window        : std_logic_vector(15 downto 0) := (others => '0');
+    signal tcp_rx_checksum      : std_logic_vector(15 downto 0) := (others => '0');
+    signal tcp_rx_flag_urg      : std_logic := '0';
+    signal tcp_rx_flag_ack      : std_logic := '0';
+    signal tcp_rx_flag_psh      : std_logic := '0';
+    signal tcp_rx_flag_rst      : std_logic := '0';
+    signal tcp_rx_flag_syn      : std_logic := '0';
+    signal tcp_rx_flag_fin      : std_logic := '0';
+    signal tcp_rx_urgent_ptr    : std_logic_vector(15 downto 0) := (others => '0');
+        
+        -- data to be sent over TCP/IP
+    signal tcp_tx_busy          : std_logic := '0';
+    signal tcp_tx_data_valid    : std_logic := '0';
+    signal tcp_tx_data          : std_logic_vector(7 downto 0) := (others => '0');
+        
+    signal tcp_tx_hdr_valid     : std_logic := '0';
+    signal tcp_tx_src_port      : std_logic_vector(15 downto 0) := (others => '0');
+    signal tcp_tx_dst_ip        : std_logic_vector(31 downto 0) := (others => '0');
+    signal tcp_tx_dst_port      : std_logic_vector(15 downto 0) := (others => '0');    
+    signal tcp_tx_seq_num       : std_logic_vector(31 downto 0) := (others => '0');
+    signal tcp_tx_ack_num       : std_logic_vector(31 downto 0) := (others => '0');
+    signal tcp_tx_window        : std_logic_vector(15 downto 0) := (others => '0');
+    signal tcp_tx_checksum      : std_logic_vector(15 downto 0) := (others => '0');
+    signal tcp_tx_flag_urg      : std_logic := '0';
+    signal tcp_tx_flag_ack      : std_logic := '0';
+    signal tcp_tx_flag_psh      : std_logic := '0';
+    signal tcp_tx_flag_rst      : std_logic := '0';
+    signal tcp_tx_flag_syn      : std_logic := '0';
+    signal tcp_tx_flag_fin      : std_logic := '0';
+    signal tcp_tx_urgent_ptr    : std_logic_vector(15 downto 0) := (others => '0');
     
     signal eth_txck           : std_logic := '0';
     signal eth_txctl          : std_logic := '0';
@@ -74,6 +190,49 @@ architecture Behavioral of tb_main_design_tcp is
     constant our_mac     : std_logic_vector(47 downto 0) := x"AB_89_67_45_23_02"; -- NOTE this is 02:23:45:67:89:AB
     constant our_ip      : std_logic_vector(31 downto 0) := x"0A_00_00_0A";
     constant our_netmask : std_logic_vector(31 downto 0) := x"00_FF_FF_FF";
+
+    component tcp_engine is 
+        port (  clk                : in  STD_LOGIC;
+                -- data received over TCP/IP
+                tcp_rx_data_valid    : in  std_logic := '0';
+                tcp_rx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+                
+                tcp_rx_hdr_valid     : in  std_logic := '0';
+                tcp_rx_src_ip        : in  std_logic_vector(31 downto 0) := (others => '0');
+                tcp_rx_src_port      : in  std_logic_vector(15 downto 0) := (others => '0');
+                tcp_rx_dst_broadcast : in  std_logic := '0';
+                tcp_rx_dst_port      : in  std_logic_vector(15 downto 0) := (others => '0');    
+                tcp_rx_seq_num       : in  std_logic_vector(31 downto 0) := (others => '0');
+                tcp_rx_ack_num       : in  std_logic_vector(31 downto 0) := (others => '0');
+                tcp_rx_window        : in  std_logic_vector(15 downto 0) := (others => '0');
+                tcp_rx_flag_urg      : in  std_logic := '0';
+                tcp_rx_flag_ack      : in  std_logic := '0';
+                tcp_rx_flag_psh      : in  std_logic := '0';
+                tcp_rx_flag_rst      : in  std_logic := '0';
+                tcp_rx_flag_syn      : in  std_logic := '0';
+                tcp_rx_flag_fin      : in  std_logic := '0';
+                tcp_rx_urgent_ptr    : in  std_logic_vector(15 downto 0) := (others => '0');
+    
+                  -- data to be sent over TP
+                tcp_tx_busy          : in  std_logic := '0';
+                tcp_tx_data_valid    : out std_logic := '0';
+                tcp_tx_data          : out std_logic_vector(7 downto 0) := (others => '0');
+                  
+                tcp_tx_hdr_valid     : out std_logic := '0';
+                tcp_tx_src_port      : out std_logic_vector(15 downto 0) := (others => '0');
+                tcp_tx_dst_ip        : out std_logic_vector(31 downto 0) := (others => '0');
+                tcp_tx_dst_port      : out std_logic_vector(15 downto 0) := (others => '0');    
+                tcp_tx_seq_num       : out std_logic_vector(31 downto 0) := (others => '0');
+                tcp_tx_ack_num       : out std_logic_vector(31 downto 0) := (others => '0');
+                tcp_tx_window        : out std_logic_vector(15 downto 0) := (others => '0');
+                tcp_tx_flag_urg      : out std_logic := '0';
+                tcp_tx_flag_ack      : out std_logic := '0';
+                tcp_tx_flag_psh      : out std_logic := '0';
+                tcp_tx_flag_rst      : out std_logic := '0';
+                tcp_tx_flag_syn      : out std_logic := '0';
+                tcp_tx_flag_fin      : out std_logic := '0';
+                tcp_tx_urgent_ptr    : out std_logic_vector(15 downto 0) := (others => '0'));
+    end component;
 
 begin
 
@@ -105,10 +264,109 @@ i_main_design: main_design generic map (
 
        phy_ready          => phy_ready,
        status             => status,
+    -- data received over UDP
+       udp_rx_valid         => udp_rx_valid,
+       udp_rx_data          => udp_rx_data,
+       udp_rx_src_ip        => udp_rx_src_ip,
+       udp_rx_src_port      => udp_rx_src_port,
+       udp_rx_dst_broadcast => udp_rx_dst_broadcast,
+       udp_rx_dst_port      => udp_rx_dst_port,
+   
+       udp_tx_busy          => udp_tx_busy,
+       udp_tx_valid         => udp_tx_valid,
+       udp_tx_data          => udp_tx_data,
+       udp_tx_src_port      => udp_tx_src_port,
+       udp_tx_dst_mac       => udp_tx_dst_mac,
+       udp_tx_dst_ip        => udp_tx_dst_ip,
+       udp_tx_dst_port      => udp_tx_dst_port,
+    
+           -- data received over TCP/IP
+       tcp_tx_busy          => tcp_tx_busy,
+        
+       tcp_rx_data_valid    => tcp_rx_data_valid,
+       tcp_rx_data          => tcp_rx_data,
        
+       tcp_rx_hdr_valid     => tcp_rx_hdr_valid,
+       tcp_rx_src_ip        => tcp_rx_src_ip,
+       tcp_rx_src_port      => tcp_rx_src_port,
+       tcp_rx_dst_port      => tcp_rx_dst_port,
+       tcp_rx_seq_num       => tcp_rx_seq_num,
+       tcp_rx_ack_num       => tcp_rx_ack_num,
+       tcp_rx_window        => tcp_rx_window,
+       tcp_rx_checksum      => tcp_rx_checksum,
+       tcp_rx_flag_urg      => tcp_rx_flag_urg, 
+       tcp_rx_flag_ack      => tcp_rx_flag_ack,
+       tcp_rx_flag_psh      => tcp_rx_flag_psh,
+       tcp_rx_flag_rst      => tcp_rx_flag_rst,
+       tcp_rx_flag_syn      => tcp_rx_flag_syn,
+       tcp_rx_flag_fin      => tcp_rx_flag_fin,
+       tcp_rx_urgent_ptr    => tcp_rx_urgent_ptr,
+       
+       -- data to be sent over TCP/IP
+       tcp_tx_data_valid    => tcp_tx_data_valid,
+       tcp_tx_data          => tcp_tx_data,
+       
+       tcp_tx_hdr_valid     => tcp_tx_hdr_valid, 
+       tcp_tx_src_port      => tcp_tx_src_port,
+       tcp_tx_dst_ip        => tcp_tx_dst_ip,
+       tcp_tx_dst_port      => tcp_tx_dst_port,    
+       tcp_tx_seq_num       => tcp_tx_seq_num,
+       tcp_tx_ack_num       => tcp_tx_ack_num,
+       tcp_tx_window        => tcp_tx_window,
+       tcp_tx_checksum      => tcp_tx_checksum,
+       tcp_tx_flag_urg      => tcp_tx_flag_urg,
+       tcp_tx_flag_ack      => tcp_tx_flag_ack,
+       tcp_tx_flag_psh      => tcp_tx_flag_psh,
+       tcp_tx_flag_rst      => tcp_tx_flag_rst,
+       tcp_tx_flag_syn      => tcp_tx_flag_syn,
+       tcp_tx_flag_fin      => tcp_tx_flag_fin,
+       tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr,
+              
        eth_txck           => eth_txck,
        eth_txctl          => eth_txctl,
        eth_txd            => eth_txd);
+
+i_tcp_engine: tcp_engine port map ( 
+        clk => clk125MHz,
+            -- data received over TCP/IP
+        tcp_rx_data_valid    => tcp_rx_data_valid,
+        tcp_rx_data          => tcp_rx_data,
+        
+        tcp_rx_hdr_valid     => tcp_rx_hdr_valid,
+        tcp_rx_src_ip        => tcp_rx_src_ip,
+        tcp_rx_src_port      => tcp_rx_src_port,
+        tcp_rx_dst_port      => tcp_rx_dst_port,
+        tcp_rx_seq_num       => tcp_rx_seq_num,
+        tcp_rx_ack_num       => tcp_rx_ack_num,
+        tcp_rx_window        => tcp_rx_window,
+        tcp_rx_flag_urg      => tcp_rx_flag_urg, 
+        tcp_rx_flag_ack      => tcp_rx_flag_ack,
+        tcp_rx_flag_psh      => tcp_rx_flag_psh,
+        tcp_rx_flag_rst      => tcp_rx_flag_rst,
+        tcp_rx_flag_syn      => tcp_rx_flag_syn,
+        tcp_rx_flag_fin      => tcp_rx_flag_fin,
+        tcp_rx_urgent_ptr    => tcp_rx_urgent_ptr,
+        
+        -- data to be sent over TCP/IP
+        tcp_tx_busy          => tcp_tx_busy,
+
+        tcp_tx_data_valid    => tcp_tx_data_valid,
+        tcp_tx_data          => tcp_tx_data,
+        
+        tcp_tx_hdr_valid     => tcp_tx_hdr_valid, 
+        tcp_tx_src_port      => tcp_tx_src_port,
+        tcp_tx_dst_ip        => tcp_tx_dst_ip,
+        tcp_tx_dst_port      => tcp_tx_dst_port,    
+        tcp_tx_seq_num       => tcp_tx_seq_num,
+        tcp_tx_ack_num       => tcp_tx_ack_num,
+        tcp_tx_window        => tcp_tx_window,
+        tcp_tx_flag_urg      => tcp_tx_flag_urg,
+        tcp_tx_flag_ack      => tcp_tx_flag_ack,
+        tcp_tx_flag_psh      => tcp_tx_flag_psh,
+        tcp_tx_flag_rst      => tcp_tx_flag_rst,
+        tcp_tx_flag_syn      => tcp_tx_flag_syn,
+        tcp_tx_flag_fin      => tcp_tx_flag_fin,
+        tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr);
 
 process(clk125MHz)
     begin

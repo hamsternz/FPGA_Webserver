@@ -226,11 +226,14 @@ timeout_proc: process(clk)
         if rising_edge(clk) then
             timeout <= '0';
             if last_state /= state then
-                timeout_counter <= to_unsigned(600000000,30);                
+                timeout_counter <= to_unsigned(5*125_000_000,30); -- 5 seconds                
+                timeout <= '0';
             elsif timeout_counter = 0 then
                 timeout <= '1';
             else
-                timeout_counter <= timeout_counter - 1;
+                if state = state_syn_rcvd then
+                    timeout_counter <= timeout_counter - 1;
+                end if;
             end if;
             last_state <= state; 
         end if;        
@@ -239,9 +242,6 @@ timeout_proc: process(clk)
 process(clk)
     begin
         if rising_edge(clk) then
-            tcp_tx_data_valid  <= '0';
-            tcp_tx_hdr_valid   <= '0';
-
             send_ack     <= '0';
             send_rst     <= '0';
             send_fin     <= '0';
@@ -254,29 +254,64 @@ process(clk)
                 when state_listen =>
                     -- Is this a SYN packet
                     if tcp_rx_hdr_valid = '1' and tcp_rx_flag_syn = '1' then
-                        if tcp_rx_dst_port = x"0050" then
+                        if tcp_rx_dst_port = x"0016" then
                             -- Send an empty ACK
-                            send_ack <='1';                            
+                            send_syn_ack <='1';                            
                             -- Remeber current session state
                             session_src_port <= tcp_rx_dst_port;
                             session_dst_ip   <= tcp_rx_src_ip;
                             session_dst_port <= tcp_rx_src_port;
                             session_seq_num  <= random_seq_num;
                             session_ack_num  <= tcp_rx_seq_num;
-                            session_window   <= x"0800";
+                            session_window   <= x"2000";
+                            state <= state_syn_rcvd;
+                        else
+                            send_rst  <='1';                            
+                            -- Remeber current session state
+                            session_src_port <= tcp_rx_dst_port;
+                            session_dst_ip   <= tcp_rx_src_ip;
+                            session_dst_port <= tcp_rx_src_port;
+                            session_seq_num  <= (others => '0');
+                            session_ack_num  <= (others => '0');
+                            session_window   <= x"2000";
                             state <= state_syn_rcvd;
                         end if;
                     end if;
                 when state_syn_rcvd =>
-                    if timeout = '1' then
-                        send_rst <= '1';
-                        state <= state_closed;    
-                    elsif tcp_rx_hdr_valid = '1' and tcp_rx_flag_syn = '1' then
-                        -- Are we getting the ACK from the other end?
-                        if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
-                            if tcp_rx_ack_num = session_seq_num then
-                                state <= state_established;
+                    -- Are we seeing a retransmit of the SYN packet
+                    if tcp_rx_hdr_valid = '1' then 
+                        if tcp_rx_flag_syn = '1' then                    
+                            if tcp_rx_dst_port = x"0016" then
+                                -- Send an empty ACK
+                                send_syn_ack <='1';                            
+                                -- Remeber current session state
+                                session_src_port <= tcp_rx_dst_port;
+                                session_dst_ip   <= tcp_rx_src_ip;
+                                session_dst_port <= tcp_rx_src_port;
+                                session_seq_num  <= random_seq_num;
+                                session_ack_num  <= tcp_rx_seq_num;
+                                session_window   <= x"2000";
+                                state <= state_syn_rcvd;
+                            end if;
+                        elsif tcp_rx_flag_ack = '1' then
+                            -- Are we getting the ACK from the other end?
+                            if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
+                                if tcp_rx_ack_num = session_seq_num then
+                                    state <= state_established;
+                                end if;
                             end if;    
+                        end if;
+                    else
+                        if timeoute = '1' then
+                            send_syn_rst  <='1';                            
+                            -- Remeber current session state
+                            session_src_port <= tcp_rx_dst_port;
+                            session_dst_ip   <= tcp_rx_src_ip;
+                            session_dst_port <= tcp_rx_src_port;
+                            session_seq_num  <= (others => '0');
+                            session_ack_num  <= (others => '0');
+                            session_window   <= x"2000";
+                            state <= state_syn_rcvd;
                         end if;
                     end if;
                 when state_syn_sent =>
@@ -420,7 +455,7 @@ i_tcp_engine_tx_fifo: tcp_engine_tx_fifo port map (
         clk            => clk,
         write_en       => send_enable,
         full           => open,
-        in_src_port    => session_dst_port,
+        in_src_port    => session_src_port,
         in_dst_ip      => session_dst_ip,
         in_dst_port    => session_dst_port,    
         in_seq_num     => session_seq_num,
@@ -460,7 +495,7 @@ i_tcp_engine_add_data: tcp_engine_add_data port map (
         read_en        => fifo_read_en,
         empty          => fifo_empty,
 
-        in_src_port    => fifo_dst_port,
+        in_src_port    => fifo_src_port,
         in_dst_ip      => fifo_dst_ip,
         in_dst_port    => fifo_dst_port,    
         in_seq_num     => fifo_seq_num,

@@ -220,14 +220,14 @@ i_ip_extract_header: ip_extract_header generic map (
         ip_dest_ip         => ip_dest_ip,
         ip_dest_broadcast  => ip_dest_broadcast);           
 
-i_ila_0: ila_0 port map (
-    clk       => clk,
-    probe0(0) => ip_extracted_data_valid, 
-    probe1    => ip_extracted_data,
-    probe2(0) => ip_extracted_data_valid, 
-    probe3(0) => tcp_hdr_valid,
-    probe4(0) => tcp_extracted_data_valid,
-    probe5    => tcp_extracted_data);
+--i_ila_0: ila_0 port map (
+--    clk       => clk,
+--    probe0(0) => ip_extracted_data_valid, 
+--    probe1    => ip_extracted_data,
+--    probe2(0) => ip_extracted_data_valid, 
+--    probe3(0) => tcp_hdr_valid,
+--    probe4(0) => tcp_extracted_data_valid,
+--    probe5    => tcp_extracted_data);
 
 i_tcp_extract_header: tcp_extract_header port map ( 
         clk            => clk,
