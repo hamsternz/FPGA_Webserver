@@ -110,8 +110,8 @@ architecture Behavioral of tcp_engine is
     signal session_flag_fin   : std_logic := '0';
     
     type t_state is (state_closed,      state_listen,     state_syn_rcvd,   state_syn_sent, 
-                     state_established, state_fin_wait_1, state_fin_wait_2, state_closing, 
-                     state_time_wait,   state_close_wait, state_last_ack);
+                     state_established, state_rx_data,    state_fin_wait_1, state_fin_wait_2, 
+                     state_closing,     state_time_wait,  state_close_wait, state_last_ack);
     signal state            : t_state := state_closed;
     signal last_state       : t_state := state_closed;
 
@@ -214,8 +214,31 @@ architecture Behavioral of tcp_engine is
         out_data_valid    : out std_logic := '0';
         out_data          : out std_logic_vector(7 downto 0) := (others => '0'));
     end component;
-     
+    
+    COMPONENT ila_0
+    PORT (
+        clk : IN STD_LOGIC;
+        probe0 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe1 : IN STD_LOGIC_VECTOR(7 DOWNTO 0); 
+        probe2 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe3 : IN STD_LOGIC_VECTOR(0 DOWNTO 0); 
+        probe4 : IN STD_LOGIC_VECTOR(0 DOWNTO 0);
+        probe5 : IN STD_LOGIC_VECTOR(7 DOWNTO 0)
+    );
+    END COMPONENT  ;
+
 begin
+your_instance_name : ila_0
+PORT MAP (
+	clk => clk,
+
+	probe0(0) => tcp_rx_hdr_valid, 
+	probe1    => tcp_rx_data, 
+	probe2(0) => tcp_rx_data_valid, 
+	probe3(0) => '0', 
+	probe4(0) => '0',
+	probe5 => (others => '0')
+);
 
 i_tcp_engine_seq_generator: tcp_engine_seq_generator port map (
         clk => clk,
@@ -251,19 +274,21 @@ process(clk)
                 when state_closed =>
                     -- Passive open
                     state <= state_listen;
+
                 when state_listen =>
                     -- Is this a SYN packet
                     if tcp_rx_hdr_valid = '1' and tcp_rx_flag_syn = '1' then
                         if tcp_rx_dst_port = x"0016" then
-                            -- Send an empty ACK
+                            -- Send an empty SYN+ACK
                             send_syn_ack <='1';                            
                             -- Remeber current session state
                             session_src_port <= tcp_rx_dst_port;
                             session_dst_ip   <= tcp_rx_src_ip;
                             session_dst_port <= tcp_rx_src_port;
                             session_seq_num  <= random_seq_num;
-                            session_ack_num  <= tcp_rx_seq_num;
+                            session_ack_num  <= std_logic_vector(unsigned(tcp_rx_seq_num)+1);
                             session_window   <= x"2000";
+                            session_data_len <= (others => '0');
                             state <= state_syn_rcvd;
                         else
                             send_rst  <='1';                            
@@ -274,36 +299,31 @@ process(clk)
                             session_seq_num  <= (others => '0');
                             session_ack_num  <= (others => '0');
                             session_window   <= x"2000";
+                            session_data_len <= (others => '0');
                             state <= state_syn_rcvd;
                         end if;
                     end if;
+
                 when state_syn_rcvd =>
                     -- Are we seeing a retransmit of the SYN packet
                     if tcp_rx_hdr_valid = '1' then 
                         if tcp_rx_flag_syn = '1' then                    
                             if tcp_rx_dst_port = x"0016" then
-                                -- Send an empty ACK
+                                -- Resend an empty SYN+ACK
                                 send_syn_ack <='1';                            
-                                -- Remeber current session state
-                                session_src_port <= tcp_rx_dst_port;
-                                session_dst_ip   <= tcp_rx_src_ip;
-                                session_dst_port <= tcp_rx_src_port;
-                                session_seq_num  <= random_seq_num;
-                                session_ack_num  <= tcp_rx_seq_num;
-                                session_window   <= x"2000";
-                                state <= state_syn_rcvd;
                             end if;
                         elsif tcp_rx_flag_ack = '1' then
                             -- Are we getting the ACK from the other end?
                             if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
-                                if tcp_rx_ack_num = session_seq_num then
+                                if unsigned(tcp_rx_ack_num) = unsigned(session_seq_num) + 1 then
                                     state <= state_established;
+                                    session_seq_num  <= tcp_rx_ack_num; 
                                 end if;
                             end if;    
                         end if;
                     else
-                        if timeoute = '1' then
-                            send_syn_rst  <='1';                            
+                        if timeout = '1' then
+                            send_rst  <='1';                            
                             -- Remeber current session state
                             session_src_port <= tcp_rx_dst_port;
                             session_dst_ip   <= tcp_rx_src_ip;
@@ -311,10 +331,13 @@ process(clk)
                             session_seq_num  <= (others => '0');
                             session_ack_num  <= (others => '0');
                             session_window   <= x"2000";
+                            session_data_len <= (others => '0');
                             state <= state_syn_rcvd;
                         end if;
                     end if;
+
                 when state_syn_sent =>
+                    -- This is only used for active opens, so we don't use it.
                     if tcp_rx_hdr_valid = '1' then
                         if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
                             if tcp_rx_flag_ack = '1' then
@@ -334,17 +357,36 @@ process(clk)
                             end if;
                         end if;
                     end if;
+
                 when state_established =>
                     if tcp_rx_hdr_valid = '1' then
                         if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
                             if tcp_rx_ack_num = session_seq_num then
                                 if tcp_rx_flag_ack = '1' then
-                                    send_ack <='1';
-                                    state <= state_close_wait;
+                                    if tcp_rx_data_valid = '1' then
+                                        session_ack_num  <= std_logic_vector(unsigned(session_ack_num) + 1);
+                                        state <= state_rx_data;
+                                    end if;
                                 end if;
                             end if;
                         end if;                                        
-                    end if;                
+                    end if;     
+
+                when state_rx_data =>
+                    -- Receive a byte, and when finished send an ACK and wait for more.
+                    if tcp_rx_data_valid = '1' then
+                        session_ack_num  <= std_logic_vector(unsigned(session_ack_num) + 1);
+                    else
+                        send_ack <='1';
+                        session_src_port <= tcp_rx_dst_port;
+                        session_dst_ip   <= tcp_rx_src_ip;
+                        session_dst_port <= tcp_rx_src_port;
+                        -- Send with the sequence we have acked up to 
+                        session_seq_num  <= tcp_rx_ack_num;
+                        session_window   <= x"2000";
+                        session_data_len <= "00000010000"; -- 16
+                        state            <= state_established;
+                    end if;
                     
                 when state_fin_wait_1  =>
                     if tcp_rx_hdr_valid = '1' then
@@ -363,6 +405,7 @@ process(clk)
                             end if;
                         end if;                                        
                     end if;                
+
                 when state_fin_wait_2  =>
                     if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
                         if tcp_rx_ack_num = session_seq_num then
@@ -372,23 +415,28 @@ process(clk)
                             end if;
                         end if;                                        
                     end if;                
+
                 when state_closing     =>
                     if tcp_rx_hdr_valid = '1' then
                         if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 
                             if tcp_rx_ack_num = session_seq_num then
                                 if tcp_rx_flag_ack = '1' then
                                     state <= state_time_wait;
+
                                 end if;
                             end if;                                        
                         end if;                
                     end if;                
+
                 when state_time_wait   =>
                     if timeout = '1' then
                         state <= state_closed;
                     end if;
+
                 when state_close_wait  =>
                     send_fin <= '1';
                     state <= state_last_ack; 
+
                 when state_last_ack    =>
                     if tcp_rx_hdr_valid = '1' then
                         if tcp_rx_dst_port = session_src_port and  tcp_rx_src_ip = session_dst_ip and tcp_rx_src_port = session_dst_port then 

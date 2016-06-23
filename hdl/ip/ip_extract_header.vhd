@@ -78,7 +78,7 @@ architecture Behavioral of ip_extract_header is
     signal i_ip_checksum        : STD_LOGIC_VECTOR (15 downto 0)  := (others => '0');
     signal i_ip_src_ip          : STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');
     signal i_ip_dest_ip         : STD_LOGIC_VECTOR (31 downto 0)  := (others => '0');           
-
+    signal data_count           : UNSIGNED(10 downto 0)   := (others => '0');
 begin
 
     ip_version         <= i_ip_version;
@@ -99,6 +99,7 @@ process(clk)
             data_out       <= data_in;
             if data_valid_in = '1' then
                 -- Note, at count of zero,  
+                data_count <= data_count + 1;
                 case count is
                     when "0000000" => i_ip_version                      <= data_in(7 downto 4);
                                       header_len(5 downto 2)            <= unsigned(data_in(3 downto 0));
@@ -128,7 +129,12 @@ process(clk)
                 if unsigned(count) >= unsigned(header_len) and unsigned(count) > 4
                     and i_ip_version = x"4" and i_ip_protocol = filter_protocol
                     and (i_ip_dest_ip = our_ip or i_ip_dest_ip = our_broadcast) then
-                    data_valid_out                   <= data_valid_in;
+                     
+                    if data_count < unsigned(i_ip_length) then
+                        data_valid_out                   <= data_valid_in;
+                    else
+                        data_valid_out                   <= '0';
+                    end if;
                     data_out                         <= data_in;
                 end if;
                 if count /= "1111111" then
@@ -138,6 +144,7 @@ process(clk)
                data_valid_out <= '0';
                data_out       <= data_in;
                count          <= (others => '0');
+               data_count <= (others => '0');
             end if;
         end if;
     end process;

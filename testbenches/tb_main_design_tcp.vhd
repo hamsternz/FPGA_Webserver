@@ -371,7 +371,7 @@ i_tcp_engine: tcp_engine port map (
 process(clk125MHz)
     begin
         if rising_edge(clk125MHz) then
-            if count < 78 then 
+            if count < 86 then 
                 input_empty <= '0';
             else
                 input_empty <= '1';
@@ -385,7 +385,7 @@ process(clk125MHz)
             end if;
 
             if input_read = '1' then
-                if count = 79 then
+                if count = 87 then
                     count <= 0;
                 else
                     count <= count + 1;
@@ -485,13 +485,21 @@ process(clk125MHz)
 
                     when 72 => input_data <= x"04";
                     when 73 => input_data <= x"02";
+                    -- Misc padding
+                    when 74 => input_data <= x"FF";
+                    when 75 => input_data <= x"FF";
+                    when 76 => input_data <= x"FF";
+                    when 77 => input_data <= x"FF";
+                    when 78 => input_data <= x"FF";
+                    when 79 => input_data <= x"FF";
+                    when 80 => input_data <= x"FF";
+                    when 81 => input_data <= x"FF";
                     --- FCS
-                    when 74 => input_data <= x"01";
-                    when 75 => input_data <= x"01";
-                    when 76 => input_data <= x"04";
-                    when 77 => input_data <= x"02";
-                    
-                    when 78 => input_data <= x"DD"; input_data_present <= '0'; 
+                    when 82 => input_data <= x"01";
+                    when 83 => input_data <= x"01";
+                    when 84 => input_data <= x"04";
+                    when 85 => input_data <= x"02";                    
+                    when 86 => input_data <= x"DD"; input_data_present <= '0'; 
                     when others => input_data <= x"DD"; input_data_present <= '0';
                 end case;
                 count2 <= 0;
