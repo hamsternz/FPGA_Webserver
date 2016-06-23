@@ -23,6 +23,17 @@ Inbound packet processing
   CRC or reception errors (where  the FIFO can be rolled back). Doing this
   in one place could save resources.
 
+TCP/IP Session protocol
+-----------------------
+* Can establish a TCP/IP session
+* Sends ACKs for incoming data
+* Currently listens on port 22 for any incoming connections
+
+TCP/IP packet support - mostly finished
+----------------------------
+* TCP RX IP Checksum is not being validated
+* TCP RX TCP Checksum is not being validated
+
 UDP Support - mostly finished
 -----------------------------
 * UDP TX cannot send a packet without any data
