@@ -68,7 +68,7 @@ process(clk)
                 when waiting =>
                     udp_tx_valid <= '0';
                     if countdown = 0 then
-                        countdown <= to_unsigned(12_499_999,24); -- 10 packets per second
+                        countdown <= to_unsigned(124_999_999,24); -- 1 packet per second
 --                        countdown <= to_unsigned(499,24);
                         state <= armed;
                     else   

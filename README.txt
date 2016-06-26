@@ -27,7 +27,8 @@ TCP/IP Session protocol
 -----------------------
 * Can establish a TCP/IP session
 * Sends ACKs for incoming data
-* Currently listens on port 22 for any incoming connections
+* Currently listens on port 80 for any incoming connections
+(TCP currently broken due to restructuring)
 
 TCP/IP packet support - mostly finished
 ----------------------------

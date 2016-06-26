@@ -452,7 +452,7 @@ process(clk125MHz)
                     when 42 => input_data <= x"c5";
                     when 43 => input_data <= x"81";
                     when 44 => input_data <= x"00";
-                    when 45 => input_data <= x"16";
+                    when 45 => input_data <= x"50";
                     when 46 => input_data <= x"6f";
                     when 47 => input_data <= x"22";
                 --

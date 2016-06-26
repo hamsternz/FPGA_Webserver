@@ -218,7 +218,7 @@ process(clk)
     
     
 i_buffer_count_and_checksum_data: buffer_count_and_checksum_data generic map (
-        min_length => 64-14-20-20
+        min_length => 60-14-20-20
     ) port map (
         clk            => clk,
         hdr_valid_in   => tcp_tx_hdr_valid,

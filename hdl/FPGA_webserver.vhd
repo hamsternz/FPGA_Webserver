@@ -123,7 +123,7 @@ architecture Behavioral of FPGA_webserver is
     signal input_data         : STD_LOGIC_VECTOR (7 downto 0);
     signal input_data_present : STD_LOGIC;
     signal input_data_error   : STD_LOGIC;
-
+    
     component main_design is
     generic (
         our_mac     : std_logic_vector(47 downto 0) := (others => '0');
@@ -289,10 +289,11 @@ architecture Behavioral of FPGA_webserver is
     signal tcp_tx_flag_syn      : std_logic := '0';
     signal tcp_tx_flag_fin      : std_logic := '0';
     signal tcp_tx_urgent_ptr    : std_logic_vector(15 downto 0) := (others => '0');
-
+    signal tcp_engine_status    : std_logic_vector(7 downto 0) := (others => '0');
     component tcp_engine is 
     port (  clk                : in  STD_LOGIC;
 
+            status               : out std_logic_vector(7 downto 0) := (others => '0');
             -- data received over TCP/IP
             tcp_rx_data_valid    : in  std_logic := '0';
             tcp_rx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
@@ -481,13 +482,14 @@ i_udp_test_sink: udp_test_sink port map (
 process(clk125Mhz)
     begin
         if tcp_rx_hdr_valid = '1' then
-            leds <= tcp_rx_dst_port(7 downto 0);
+            leds <= tcp_engine_status;
         end if;
     end process;
 
 i_tcp_engine: tcp_engine port map ( 
         clk => clk125MHz,
             -- data received over TCP/IP
+        status => tcp_engine_status,
         tcp_rx_data_valid    => tcp_rx_data_valid,
         tcp_rx_data          => tcp_rx_data,
         
