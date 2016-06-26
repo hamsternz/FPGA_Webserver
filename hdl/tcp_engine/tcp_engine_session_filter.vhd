@@ -89,8 +89,13 @@ clk_proc: process(clk)
                     out_hdr_valid    <= '0';
                     do_drop <= '0';
                 else     
-                    out_data_valid <= in_data_valid;
-                    out_hdr_valid  <= in_hdr_valid;
+                    if in_dst_port = listen_port and in_src_ip = session_src_ip and in_src_port = session_src_port then
+                        out_data_valid <= in_data_valid;
+                        out_hdr_valid  <= in_hdr_valid;
+                    else
+                        out_data_valid   <= '0';
+                        out_hdr_valid    <= '0';
+                    end if;
                 end if;
             else
                 if in_hdr_valid = '1' then
