@@ -50,7 +50,7 @@ end udp_test_source;
 architecture Behavioral of udp_test_source is
     type t_state is (waiting, armed, sending);
     signal state : t_state := waiting;
-    signal countdown  : unsigned(23 downto 0) := to_unsigned(1000,24);
+    signal countdown  : unsigned(27 downto 0) := to_unsigned(1000,28);
     signal data_count : unsigned(7 downto 0) := to_unsigned(0,8);
 begin
 
@@ -68,7 +68,7 @@ process(clk)
                 when waiting =>
                     udp_tx_valid <= '0';
                     if countdown = 0 then
-                        countdown <= to_unsigned(124_999_999,24); -- 1 packet per second
+                        countdown <= to_unsigned(124_999_999,28); -- 1 packet per second
 --                        countdown <= to_unsigned(499,24);
                         state <= armed;
                     else   

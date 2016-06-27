@@ -128,7 +128,7 @@ architecture Behavioral of tcp_engine is
     end component;
 
     signal session_data_valid : std_logic := '0';
-    signal session_data_out   : std_logic_vector(7 downto 0) := (others => '0');
+    signal session_data       : std_logic_vector(7 downto 0) := (others => '0');
     signal session_hdr_valid  : std_logic := '0';
     signal session_from_ip    : std_logic_vector(31 downto 0) := (others => '0');
     signal session_from_port  : std_logic_vector(15 downto 0) := (others => '0');
@@ -317,17 +317,16 @@ process(clK)
             status(7) <= session_connected;
         end if;
     end process;
---your_instance_name : ila_0
---PORT MAP (
---	clk => clk,
---
---	probe0(0) => tcp_rx_hdr_valid, 
---	probe1    => tcp_rx_data, 
---	probe2(0) => tcp_rx_data_valid, 
---	probe3(0) => '0', 
---	probe4(0) => '0',
---	probe5 => (others => '0')
---);
+ debug : ila_0
+  PORT MAP (
+	clk => clk,
+
+	probe0(0) => session_hdr_valid, 
+	probe1    => session_data, 
+	probe2(0) => session_data_valid, 
+	probe3(0) => session_flag_ack, 
+	probe4(0) => session_flag_rst,
+	probe5 => fifo_data_len(7 downto 0));
 
 i_tcp_engine_seq_generator: tcp_engine_seq_generator port map (
         clk => clk,
@@ -378,7 +377,7 @@ i_tcp_engine_session_filter: tcp_engine_session_filter port map (
         in_urgent_ptr    => tcp_rx_urgent_ptr,
 
         out_data_valid   => session_data_valid,
-        out_data         => session_data_out,
+        out_data         => session_data,
 
         out_hdr_valid    => session_hdr_valid,
         out_from_ip      => session_from_ip,
@@ -429,7 +428,7 @@ process(clk)
                             send_syn_ack <='1';                            
                         elsif session_flag_ack = '1' then
                             -- We are getting the ACK from the other end
-                            if unsigned(tcp_rx_ack_num) = unsigned(tosend_seq_num) + 1 then
+                            if unsigned(session_ack_num) = unsigned(tosend_seq_num)+1 then
                                 state <= state_established;
                             end if;
                         end if;
@@ -445,14 +444,14 @@ process(clk)
 
                 when state_established =>
                     if session_hdr_valid = '1' then
-                        if session_ack_num = tosend_seq_num then
-                            if session_flag_ack = '1' then
+                        if session_flag_ack = '1' then
+                            if session_ack_num = tosend_seq_num then
                                 if session_data_valid = '1' then
                                     tosend_ack_num  <= std_logic_vector(unsigned(tosend_ack_num) + 1);
                                     state <= state_rx_data;
                                 end if;
                                 if  session_flag_fin = '1' then
-                                    send_fin_ack <='1';                            
+                                    send_fin_ack    <= '1';                            
                                     tosend_ack_num  <= std_logic_vector(unsigned(tosend_ack_num) + 1);
                                     state <= state_fin_wait_1;
                                 end if;
@@ -465,7 +464,7 @@ process(clk)
                     if session_data_valid = '1' then
                         tosend_ack_num  <= std_logic_vector(unsigned(tosend_ack_num) + 1);
                     else
-                        send_ack         <='1';
+                        send_ack         <= '1';
                         send_some_data   <= '1';                        
                         -- Send with the sequence we have acked up to
                         state            <= state_established;
@@ -534,20 +533,18 @@ send_packets: process(clk)
             -- This block is to set up the initial sequence  
             -- numbers during the initial three-way handshake
             -------------------------------------------------
-            if tcp_rx_hdr_valid = '1' then
-                if state = state_listen then
-                    if session_connected = '1' then
-                        tosend_seq_num       <= random_seq_num;
-                        tosend_seq_num_next  <= random_seq_num;
-                    end if;
-                elsif state = state_syn_rcvd then
-                    if session_hdr_valid = '1' then 
-                        if session_flag_syn = '0' and tcp_rx_flag_ack = '1' then
-                            -- We are seing a ACK with the correct sequence number
-                            if unsigned(tcp_rx_ack_num) = unsigned(tosend_seq_num) + 1 then
-                                tosend_seq_num      <= std_logic_vector(unsigned(tosend_seq_num) + 1);
-                                tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num) + 1);
-                            end if;
+            if state = state_listen then
+                if session_connected = '1' then
+                    tosend_seq_num       <= random_seq_num;
+                    tosend_seq_num_next  <= random_seq_num;
+                end if;
+            elsif state = state_syn_rcvd then
+                if session_hdr_valid = '1' then 
+                    if session_flag_syn = '0' and session_flag_ack = '1' then
+                        -- We are seing a ACK with the correct sequence number
+                        if unsigned(session_ack_num) = unsigned(tosend_seq_num) + 1 then
+                            tosend_seq_num      <= std_logic_vector(unsigned(tosend_seq_num) + 1);
+                            tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num) + 1);
                         end if;
                     end if;
                 end if;
@@ -559,8 +556,17 @@ send_packets: process(clk)
             send_enable  <= '0';
             if send_ack = '1' then
                 send_enable        <= '1';
+                
+                -- Send a few bytes of data with every ACK
                 tosend_data_addr  <= (others => '0');
-                tosend_data_len   <= (others => '0');                        
+                if send_some_data = '1' then
+                    -- This won't work, as we are notupdating the sequence number correctly 
+                   tosend_data_len  <= "00000000100";
+                   tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num)+4); 
+                else
+                   tosend_data_len   <= (others => '0');
+                end if;                    
+                
                 tosend_flag_urg   <= '0';
                 tosend_flag_ack   <= '1';
                 tosend_flag_psh   <= '0';
@@ -570,13 +576,7 @@ send_packets: process(clk)
             elsif send_syn_ack = '1' then
                 send_enable        <= '1';
                 tosend_data_addr  <= (others => '0');
-                if send_some_data = '1' then
-                    -- This won't work, as we are notupdating the sequence number correctly 
-                   tosend_data_len  <= "00000000100";
-                   tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num)+4); 
-                else
-                   tosend_data_len   <= (others => '0');
-                end if;                    
+                tosend_data_len   <= (others => '0');                        
                 tosend_flag_urg   <= '0';
                 tosend_flag_ack   <= '1';
                 tosend_flag_psh   <= '0';
