@@ -136,24 +136,24 @@ architecture Behavioral of tcp_handler is
         clk                  : in  STD_LOGIC;
         tcp_tx_busy          : out std_logic;
 
-        tcp_tx_data_valid    : in  std_logic := '0';
-        tcp_tx_data          : in  std_logic_vector(7 downto 0) := (others => '0');
+        tcp_tx_data_valid    : in  std_logic;
+        tcp_tx_data          : in  std_logic_vector(7 downto 0);
         
         tcp_tx_hdr_valid     : in std_logic := '0';
-        tcp_tx_dst_mac       : in std_logic_vector(47 downto 0) := (others => '0');
-        tcp_tx_dst_ip        : in std_logic_vector(31 downto 0) := (others => '0');
-        tcp_tx_src_port      : in std_logic_vector(15 downto 0) := (others => '0');
-        tcp_tx_dst_port      : in std_logic_vector(15 downto 0) := (others => '0');    
-        tcp_tx_seq_num       : in std_logic_vector(31 downto 0) := (others => '0');
-        tcp_tx_ack_num       : in std_logic_vector(31 downto 0) := (others => '0');
-        tcp_tx_window        : in std_logic_vector(15 downto 0) := (others => '0');
-        tcp_tx_flag_urg      : in std_logic := '0';
-        tcp_tx_flag_ack      : in std_logic := '0';
-        tcp_tx_flag_psh      : in std_logic := '0';
-        tcp_tx_flag_rst      : in std_logic := '0';
-        tcp_tx_flag_syn      : in std_logic := '0';
-        tcp_tx_flag_fin      : in std_logic := '0';
-        tcp_tx_urgent_ptr    : in std_logic_vector(15 downto 0) := (others => '0');
+        tcp_tx_dst_mac       : in std_logic_vector(47 downto 0);
+        tcp_tx_dst_ip        : in std_logic_vector(31 downto 0);
+        tcp_tx_src_port      : in std_logic_vector(15 downto 0);
+        tcp_tx_dst_port      : in std_logic_vector(15 downto 0);    
+        tcp_tx_seq_num       : in std_logic_vector(31 downto 0);
+        tcp_tx_ack_num       : in std_logic_vector(31 downto 0);
+        tcp_tx_window        : in std_logic_vector(15 downto 0);
+        tcp_tx_flag_urg      : in std_logic;
+        tcp_tx_flag_ack      : in std_logic;
+        tcp_tx_flag_psh      : in std_logic;
+        tcp_tx_flag_rst      : in std_logic;
+        tcp_tx_flag_syn      : in std_logic;
+        tcp_tx_flag_fin      : in std_logic;
+        tcp_tx_urgent_ptr    : in std_logic_vector(15 downto 0);
 
         packet_out_request : out std_logic := '0';
         packet_out_granted : in  std_logic := '0';
@@ -221,7 +221,10 @@ i_tcp_tx_packet : tcp_tx_packet generic map (
         tcp_tx_flag_syn      => tcp_tx_flag_syn,
         tcp_tx_flag_fin      => tcp_tx_flag_fin,
         tcp_tx_urgent_ptr    => tcp_tx_urgent_ptr,
-    
+        
+        tcp_tx_data_valid    => tcp_tx_data_valid, 
+        tcp_tx_data          => tcp_tx_data, 
+            
         packet_out_request   => packet_out_request, 
         packet_out_granted   => packet_out_granted,
         packet_out_valid     => packet_out_valid,         

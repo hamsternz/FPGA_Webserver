@@ -180,7 +180,8 @@ process(clk)
             tcp_checksum_u1b <= to_unsigned(0,20) + unsigned(pseudohdr_08) + unsigned(pseudohdr_09) 
                                                   + unsigned(pseudohdr_10) + unsigned(pseudohdr_11) 
                                                   + unsigned(pseudohdr_12) + unsigned(pseudohdr_13)
-                                                  + x"0000"                + unsigned(pseudohdr_15);   
+                                                  + x"0000"                + unsigned(pseudohdr_15)
+                                                  + unsigned(data_checksum);   
             tcp_checksum_u2 <= to_unsigned(0,17) + tcp_checksum_u1a(15 downto 0) + tcp_checksum_u1a(19 downto 16) 
                                                  + tcp_checksum_u1b(15 downto 0) + tcp_checksum_u1b(19 downto 16);
             tcp_checksum_u3 <= tcp_checksum_u2(15 downto 0) + tcp_checksum_u2(16 downto 16);

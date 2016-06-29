@@ -128,7 +128,7 @@ main_proc: process(clk)
             
             if data_valid_in = '1' then
                 --- Update the checksum here
-                if data_count(0) = '0' then
+                if data_count(0) = '0' or data_valid_in_last = '0' then
                     checksum <= to_unsigned(0,17) + checksum(15 downto 0) + checksum(16 downto 16) + (unsigned(data_in) & to_unsigned(0,8));
                 else
                     checksum <= to_unsigned(0,17) + checksum(15 downto 0) + checksum(16 downto 16) + unsigned(data_in); 

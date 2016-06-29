@@ -529,6 +529,11 @@ process(clk)
 send_packets: process(clk)
     begin
         if rising_edge(clk) then
+            -------------------------------------------------------------
+            -- Update the sequence number if a packet was sent last cycle
+            -------------------------------------------------------------
+            tosend_seq_num <= tosend_seq_num_next;
+
             -------------------------------------------------
             -- This block is to set up the initial sequence  
             -- numbers during the initial three-way handshake
