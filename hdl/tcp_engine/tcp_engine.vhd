@@ -317,16 +317,15 @@ process(clK)
             status(7) <= session_connected;
         end if;
     end process;
- debug : ila_0
-  PORT MAP (
-	clk => clk,
-
-	probe0(0) => session_hdr_valid, 
-	probe1    => session_data, 
-	probe2(0) => session_data_valid, 
-	probe3(0) => session_flag_ack, 
-	probe4(0) => session_flag_rst,
-	probe5 => fifo_data_len(7 downto 0));
+--debug : ila_0
+--  PORT MAP (
+--	clk => clk,
+--	probe0(0) => session_hdr_valid, 
+--	probe1    => session_data, 
+--	probe2(0) => session_data_valid, 
+--	probe3(0) => session_flag_ack, 
+--	probe4(0) => session_flag_fin,
+--	probe5 => fifo_data_len(7 downto 0));
 
 i_tcp_engine_seq_generator: tcp_engine_seq_generator port map (
         clk => clk,
@@ -400,6 +399,7 @@ process(clk)
             send_ack        <= '0';
             send_rst        <= '0';
             send_fin        <= '0';
+            send_fin_ack    <= '0';
             send_syn_ack    <= '0';
             send_some_data  <= '0';
             case state is
@@ -449,8 +449,7 @@ process(clk)
                                 if session_data_valid = '1' then
                                     tosend_ack_num  <= std_logic_vector(unsigned(tosend_ack_num) + 1);
                                     state <= state_rx_data;
-                                end if;
-                                if  session_flag_fin = '1' then
+                                elsif  session_flag_fin = '1' then
                                     send_fin_ack    <= '1';                            
                                     tosend_ack_num  <= std_logic_vector(unsigned(tosend_ack_num) + 1);
                                     state <= state_fin_wait_1;
@@ -474,6 +473,13 @@ process(clk)
                     if session_hdr_valid = '1' then
                         if session_ack_num = tosend_seq_num then
                             if session_flag_ack = '1' and session_flag_fin = '1' then
+                                send_ack <='1';
+                            end if;
+                         elsif unsigned(session_ack_num) = unsigned(tosend_seq_num)+1 then
+                            tosend_seq_num      <= std_logic_vector(unsigned(tosend_seq_num) + 1);
+                            tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num) + 1);
+                            if session_flag_ack = '1' and session_flag_fin = '1' then
+                                -- If we get a FIN+ACK we can send an ACK and straight to time_wait
                                 send_ack <='1';
                                 state <= state_time_wait;
                             elsif session_flag_ack = '1' then
@@ -565,7 +571,6 @@ send_packets: process(clk)
                 -- Send a few bytes of data with every ACK
                 tosend_data_addr  <= (others => '0');
                 if send_some_data = '1' then
-                    -- This won't work, as we are notupdating the sequence number correctly 
                    tosend_data_len  <= "00000010000";
                    tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num)+16); 
                 else
