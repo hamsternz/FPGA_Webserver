@@ -28,10 +28,11 @@ TCP/IP Session protocol
 * Can establish a TCP/IP session
 * Sends ACKs for incoming data
 * Currently listens on port 80 for any incoming connections
-(TCP currently broken due to restructuring)
+* Replies with 'FPGA says "Hi"\r\n' to any incoming packets that contains data
+* Tears down session when remote end closes
 
 TCP/IP packet support - mostly finished
-----------------------------
+---------------------------------------
 * TCP RX IP Checksum is not being validated
 * TCP RX TCP Checksum is not being validated
 
