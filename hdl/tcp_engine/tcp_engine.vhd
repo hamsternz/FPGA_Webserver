@@ -566,8 +566,8 @@ send_packets: process(clk)
                 tosend_data_addr  <= (others => '0');
                 if send_some_data = '1' then
                     -- This won't work, as we are notupdating the sequence number correctly 
-                   tosend_data_len  <= "00000000100";
-                   tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num)+4); 
+                   tosend_data_len  <= "00000010000";
+                   tosend_seq_num_next <= std_logic_vector(unsigned(tosend_seq_num)+16); 
                 else
                    tosend_data_len   <= (others => '0');
                 end if;                    
